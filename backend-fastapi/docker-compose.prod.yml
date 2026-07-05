@@ -1,0 +1,24 @@
+# Production overlay. Use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Adds Caddy (auto HTTPS) in front of the API and stops publishing the API port
+# directly to the host — only Caddy exposes 80/443.
+services:
+  api:
+    ports: !reset []
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  caddy_data:
+  caddy_config:

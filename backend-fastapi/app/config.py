@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -26,6 +27,17 @@ class Settings(BaseSettings):
     openrouter_model: str = "anthropic/claude-sonnet-4.6"
 
     fcm_service_account_json_path: str = ""
+
+    @field_validator("database_url")
+    @classmethod
+    def _normalize_db_scheme(cls, v: str) -> str:
+        """DO App Platform / Heroku-style URLs use postgres:// or postgresql://;
+        SQLAlchemy needs the psycopg3 driver spelled out."""
+        if v.startswith("postgres://"):
+            return v.replace("postgres://", "postgresql+psycopg://", 1)
+        if v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+psycopg://", 1)
+        return v
 
 
 @lru_cache
