@@ -13,6 +13,7 @@ os.environ["RUN_MIGRATIONS"] = "false"
 os.environ["ANTHROPIC_API_KEY"] = ""
 os.environ["OPENROUTER_API_KEY"] = ""
 os.environ["LLM_PROVIDER"] = "openrouter"
+os.environ["CALENDAR_ICS_URL"] = ""  # a real .env may set it; tests must stay offline
 
 import pytest
 from fastapi.testclient import TestClient
