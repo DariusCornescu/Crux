@@ -50,6 +50,28 @@ class ReportOut(BaseModel):
     created_at: datetime
 
 
+class VoiceLogCreate(BaseModel):
+    transcript: str
+    lang: str | None = None
+    activity_id: int | None = None
+    created_at: datetime | None = None
+
+
+class VoiceLogOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    created_at: datetime
+    activity_id: int | None = None
+    lang: str | None = None
+    transcript: str
+    perceived_effort: int | None = None
+    session_type: ActivityType | None = None
+    notes: str | None = None
+    extraction_method: str
+    extracted: dict | None = None
+
+
 class ReportGenerateIn(BaseModel):
     week_start: date | None = None
 

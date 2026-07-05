@@ -2,7 +2,7 @@ import os
 
 from fastapi import FastAPI
 
-from app.routers import activities, chat, dashboard, devices, health, integrations, reports
+from app.routers import activities, chat, dashboard, devices, health, integrations, reports, voice_logs
 
 
 # Schema is managed by Alembic (see backend-fastapi/alembic/). On startup we
@@ -34,3 +34,4 @@ app.include_router(reports.router)
 app.include_router(chat.router)
 app.include_router(integrations.router)
 app.include_router(devices.router)
+app.include_router(voice_logs.router)

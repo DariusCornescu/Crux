@@ -8,7 +8,7 @@ Effort modes — the physiological backbone of the whole app:
 import enum
 from datetime import date, datetime
 
-from sqlalchemy import JSON, Date, DateTime, Enum, Float, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Date, DateTime, Enum, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -133,3 +133,19 @@ class DeviceToken(Base):
     token: Mapped[str] = mapped_column(String(512), unique=True)
     platform: Mapped[str] = mapped_column(String(16), default="android")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)
+
+
+class VoiceLog(Base):
+    __tablename__ = "voice_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow, index=True)
+    activity_id: Mapped[int | None] = mapped_column(ForeignKey("activities.id"), nullable=True)
+    lang: Mapped[str | None] = mapped_column(String(8), nullable=True)      # "ro" | "en" | "mixed"
+    transcript: Mapped[str] = mapped_column(Text)
+    # --- extracted structured fields ---
+    perceived_effort: Mapped[int | None] = mapped_column(Integer, nullable=True)   # RPE 1-10
+    session_type: Mapped[ActivityType | None] = mapped_column(Enum(ActivityType), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)         # subjective summary
+    extraction_method: Mapped[str] = mapped_column(String(16), default="none")  # deterministic|llm|none
+    extracted: Mapped[dict | None] = mapped_column(JSON, nullable=True)    # full struct: {symptoms:[], terrain:[], ...}
