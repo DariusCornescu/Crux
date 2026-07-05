@@ -34,6 +34,9 @@ git push -u origin feat/report-correlations   # PR 10
 git push -u origin feat/interference-coaching # PR 11
 git push -u origin feat/audio-priming         # PR 12
 git push -u origin feat/pacing-model          # PR 13
+git push -u origin feat/wellness-ingestion    # PR 14
+git push -u origin feat/calendar-sync         # PR 15
+git push -u origin feat/stress-profile        # PR 16
 ```
 Each PR's description can be its commit message (`git log -1 <branch>`).
 Because branches are stacked, GitHub shows only the new diff once the previous

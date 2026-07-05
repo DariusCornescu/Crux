@@ -2,6 +2,27 @@
 
 Session log, newest first (same convention as ListManagerApp).
 
+## 2026-07-05 (later) — stress × schedule + wearable ingestion (Phases A-C)
+
+Spec `superpowers/specs/2026-07-05-stress-schedule-wearable-design.md`, TDD
+throughout, suite 58 → **75 passed**, two new migrations (wellness_samples,
+calendar_events). Three new PRs on the stack:
+- `feat/wellness-ingestion` — device-agnostic intraday WellnessSample +
+  idempotent `POST /wellness/ingest`; daily roll-up finally fills
+  DailySummary sleep/RHR (conditions strip shows real data).
+- `feat/calendar-sync` — work calendar via published-ICS feed (no OAuth/admin
+  consent on the company tenant), RRULE expansion, privacy-preserving storage
+  (hashed subjects, no titles), meeting-load aggregation, hourly beat.
+- `feat/stress-profile` — hour-of-day stress (vendor score or inverted-HRV
+  fallback), 4 deterministic schedule findings (peak hours, heavy-meeting
+  stress delta, late-meetings→sleep, early-meetings→RHR),
+  `GET /insights/stress-profile`, chat context + weekly report integration.
+
+**Next:** Phase D (Android Health Connect reader — needs a physical device),
+optional Phase E (Oura adapter if the ring is bought), Android UI for
+stress/insights. Set `CALENDAR_ICS_URL` + `HOME_TIMEZONE` in `.env` to
+activate calendar sync.
+
 ## 2026-07-05 — overnight autonomous run (handoff plan, Phases 0–5)
 
 All five phases of `docs/superpowers/plans/2026-07-05-overnight-fable-handoff.md`
