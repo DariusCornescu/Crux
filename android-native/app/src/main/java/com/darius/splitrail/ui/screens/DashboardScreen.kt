@@ -26,6 +26,7 @@ import com.darius.splitrail.ui.components.ErrorStrip
 import com.darius.splitrail.ui.components.GateInstrument
 import com.darius.splitrail.ui.components.HairlineRule
 import com.darius.splitrail.ui.components.LoadingStrip
+import com.darius.splitrail.ui.components.MoodTrace
 import com.darius.splitrail.ui.components.RailTape
 import com.darius.splitrail.ui.components.StripInstrument
 import com.darius.splitrail.ui.theme.GateRed
@@ -54,6 +55,10 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
 @Composable
 private fun DashboardBody(data: DashboardData) {
     ConditionsStrip(data.conditions)
+    if (data.moodTrend.any { it != null }) {
+        MoodTrace(data.moodTrend, Modifier.padding(horizontal = 20.dp))
+        Spacer(Modifier.height(10.dp))
+    }
     HairlineRule()
 
     // THE RAIL — signature element

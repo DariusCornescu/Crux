@@ -6,6 +6,7 @@ def test_status_disconnected(client):
 
 def test_sync_requires_connection(client):
     assert client.post("/integrations/strava/sync").status_code == 400
+    assert client.post("/integrations/spotify/sync").status_code == 400
 
 
 def test_authorize_urls(client):

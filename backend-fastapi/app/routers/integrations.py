@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import strava
+from app import spotify, strava
 from app.config import get_settings
 from app.database import get_db
 from app.models import OAuthToken
@@ -93,7 +93,21 @@ def spotify_authorize() -> dict:
     return {"authorize_url": f"https://accounts.spotify.com/authorize?{params}"}
 
 
-@router.get("/spotify/callback")
-def spotify_callback(code: str = "") -> dict:
-    # TODO step 4: exchange code -> tokens, persist OAuthToken, sync listening history
-    return {"status": "todo", "code_received": bool(code)}
+@router.get("/spotify/callback", response_class=HTMLResponse)
+def spotify_callback(code: str = "", error: str = "", db: Session = Depends(get_db)):
+    if error or not code:
+        return _CALLBACK_HTML.format(title="SPOTIFY — NOT CONNECTED", note=error or "no code")
+    spotify.exchange_code(db, code)
+    try:
+        spotify.sync_recently_played(db)
+    except Exception:
+        pass
+    return _CALLBACK_HTML.format(title="SPOTIFY CONNECTED", note="return to Splitrail")
+
+
+@router.post("/spotify/sync", response_model=SyncResult)
+def spotify_sync(db: Session = Depends(get_db)):
+    try:
+        return SyncResult(synced=spotify.sync_recently_played(db))
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e))

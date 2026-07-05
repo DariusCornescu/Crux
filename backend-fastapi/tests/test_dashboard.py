@@ -2,6 +2,7 @@ def test_demo_payload_when_empty(client):
     d = client.get("/dashboard/summary").json()
     assert d["gate"]["best_split"] == 6.98
     assert d["gate"]["pb"] == 6.91
+    assert len(d["mood_trend"]) == 14
     assert len(d["rail"]) == 6
 
 
@@ -17,3 +18,4 @@ def test_real_path_after_data(client):
     assert d["alti"]["load_kg"] == 18
     assert d["alti"]["carries"] == 1
     assert d["gate"]["best_split"] is None  # no demo bleed-through
+    assert len(d["mood_trend"]) == 14

@@ -19,9 +19,19 @@ def sync_strava() -> int:
 
 
 @celery_app.task
-def sync_spotify() -> str:
-    """Build-order step 4: pull recently played + audio features, upsert ListeningSession."""
-    return "todo"
+def sync_spotify() -> int:
+    from app import spotify
+
+    db = SessionLocal()
+    try:
+        from sqlalchemy import select
+
+        from app.models import OAuthToken
+        if db.scalar(select(OAuthToken).where(OAuthToken.provider == "spotify")) is None:
+            return 0
+        return spotify.sync_recently_played(db)
+    finally:
+        db.close()
 
 
 @celery_app.task

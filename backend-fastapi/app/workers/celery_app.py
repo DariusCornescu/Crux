@@ -16,6 +16,10 @@ celery_app.conf.beat_schedule = {
         "task": "app.workers.tasks.sync_strava",
         "schedule": crontab(minute="*/30"),
     },
+    "sync-spotify": {
+        "task": "app.workers.tasks.sync_spotify",
+        "schedule": crontab(minute="*/45"),
+    },
 }
 
 celery_app.autodiscover_tasks(["app.workers"])

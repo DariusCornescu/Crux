@@ -16,11 +16,12 @@ import kotlin.math.roundToInt
 // one-to-one (same convention as ListManagerApp's DTOs.kt).
 
 data class ConditionsDTO(val sleep_min: Int?, val resting_hr: Int?, val mood_valence: Double?)
+data class MoodPointDTO(val day: String, val valence: Double?)
 data class RailEntryDTO(val day: String, val mode: String, val type: String, val duration_s: Int, val best_split: Double?, val distance_m: Double?, val vert_m: Double?)
 data class GateBlockDTO(val best_split: Double?, val pb: Double, val session_note: String?, val splits: List<Double>?)
 data class StripBlockDTO(val week_km: Double, val long_run_km: Double, val z2_pct: Double?, val pace_trend: List<Double>?)
 data class AltiBlockDTO(val vert_m: Double, val goal_m: Double, val load_kg: Double?, val carries: Int)
-data class DashboardDTO(val week: Int, val conditions: ConditionsDTO, val rail: List<RailEntryDTO>?, val gate: GateBlockDTO, val strip: StripBlockDTO, val alti: AltiBlockDTO)
+data class DashboardDTO(val week: Int, val conditions: ConditionsDTO, val mood_trend: List<MoodPointDTO>?, val rail: List<RailEntryDTO>?, val gate: GateBlockDTO, val strip: StripBlockDTO, val alti: AltiBlockDTO)
 
 data class AuthorizeUrlDTO(val authorize_url: String)
 data class IntegrationStateDTO(val connected: Boolean, val athlete_id: String?, val last_synced_at: String?)
@@ -44,6 +45,7 @@ fun RailEntryDTO.toModel() = RailEntry(
 fun DashboardDTO.toModel() = DashboardData(
     week = week,
     conditions = Conditions(conditions.sleep_min, conditions.resting_hr, conditions.mood_valence),
+    moodTrend = mood_trend.orEmpty().map { it.valence },
     rail = rail.orEmpty().map { it.toModel() },
     gate = GateBlock(gate.best_split, gate.pb, gate.session_note, gate.splits.orEmpty()),
     strip = StripBlock(

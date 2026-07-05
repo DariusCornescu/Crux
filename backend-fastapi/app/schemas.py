@@ -83,6 +83,11 @@ class Conditions(BaseModel):
     mood_valence: float | None = None
 
 
+class MoodPoint(BaseModel):
+    day: date
+    valence: float | None = None
+
+
 class RailEntry(BaseModel):
     day: date
     mode: EffortMode
@@ -117,6 +122,7 @@ class AltiBlock(BaseModel):
 class DashboardOut(BaseModel):
     week: int
     conditions: Conditions
+    mood_trend: list[MoodPoint] = []
     rail: list[RailEntry]
     gate: GateBlock
     strip: StripBlock

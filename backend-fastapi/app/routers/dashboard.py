@@ -4,6 +4,7 @@ plus the Rail and a 14-day mood trend from Spotify listening data.
 Returns demo data while the DB has no activities so the Android client
 can be developed against the real payload shape.
 """
+import math
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends
@@ -12,15 +13,32 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import Activity, ActivityType, DailySummary, EffortMode
-from app.schemas import AltiBlock, Conditions, DashboardOut, GateBlock, RailEntry, StripBlock
+from app.schemas import (AltiBlock, Conditions, DashboardOut, GateBlock,
+                         MoodPoint, RailEntry, StripBlock)
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 
+def _mood_trend(db: Session, days: int = 14) -> list[MoodPoint]:
+    since = date.today() - timedelta(days=days - 1)
+    rows = db.scalars(
+        select(DailySummary).where(DailySummary.day >= since).order_by(DailySummary.day)
+    ).all()
+    by_day = {r.day: r.mood_valence for r in rows}
+    return [MoodPoint(day=since + timedelta(days=i), valence=by_day.get(since + timedelta(days=i)))
+            for i in range(days)]
+
+
 def _demo(week_start: date) -> DashboardOut:
+    today = date.today()
     return DashboardOut(
         week=week_start.isocalendar().week,
         conditions=Conditions(sleep_min=432, resting_hr=52, mood_valence=0.64),
+        mood_trend=[
+            MoodPoint(day=today - timedelta(days=13 - i),
+                      valence=round(0.55 + 0.15 * math.sin(i / 2.2), 2) if i % 5 else None)
+            for i in range(14)
+        ],
         rail=[
             RailEntry(day=week_start, mode=EffortMode.explosive, type=ActivityType.sprint,
                       duration_s=3600, best_split=6.98),
@@ -92,4 +110,5 @@ def summary(db: Session = Depends(get_db)):
     )
 
     return DashboardOut(week=week_start.isocalendar().week, conditions=conditions,
-                        rail=rail, gate=gate, strip=strip, alti=alti)
+                        mood_trend=_mood_trend(db), rail=rail, gate=gate,
+                        strip=strip, alti=alti)
