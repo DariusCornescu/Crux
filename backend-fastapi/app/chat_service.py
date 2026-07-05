@@ -12,8 +12,10 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import audio_priming, llm
-from app.models import Activity, ChatMessage, DailySummary, EffortMode, ListeningSession, Report
+from app import audio_priming, llm, stress_profile
+from app.config import get_settings
+from app.models import (Activity, CalendarEvent, ChatMessage, DailySummary, EffortMode,
+                        ListeningSession, Report, WellnessSample)
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +64,10 @@ def build_context(db: Session, days: int = 28) -> dict:
     listening = db.scalars(
         select(ListeningSession).where(ListeningSession.played_at >= since)
     ).all()
+    wellness = db.scalars(select(WellnessSample).where(
+        WellnessSample.recorded_at >= since,
+        WellnessSample.kind.in_(["stress_score", "hrv_ms"]))).all()
+    calendar_events = db.scalars(select(CalendarEvent).where(CalendarEvent.start >= since)).all()
 
     return {
         "window_days": days,
@@ -75,6 +81,13 @@ def build_context(db: Session, days: int = 28) -> dict:
         ],
         "latest_report_highlights": latest_report.highlights if latest_report else None,
         "audio_priming": audio_priming.best_session_audio(activities, listening),
+        "stress_profile": {
+            "findings": [f["message"] for f in stress_profile.schedule_overlay(
+                calendar_events, wellness, summaries,
+                get_settings().home_timezone)],
+            "hourly_workday": stress_profile.hourly_profile(
+                wellness, get_settings().home_timezone)["workday"],
+        },
         "activities": [
             {"day": a.start_time.date().isoformat(), "type": a.type.value,
              "mode": a.mode.value, "name": a.name, "duration_s": a.duration_s,

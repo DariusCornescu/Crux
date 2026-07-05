@@ -15,8 +15,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import llm
-from app import correlations, interference
-from app.models import Activity, DailySummary, EffortMode, Report, VoiceLog
+from app import calendar_sync, correlations, interference, stress_profile
+from app.config import get_settings
+from app.models import (Activity, CalendarEvent, DailySummary, EffortMode, Report,
+                        VoiceLog, WellnessSample)
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +39,8 @@ speed) when the data suggests them. No pleasantries, no generic advice.
 When subjective reports are present, cross-reference them against the objective
 numbers and explain correlations concretely (cite the day and the metric).
 For each interference flag provided, explain the mechanism using the REFERENCE,
-not just a warning.
+not just a warning. Use the schedule/stress data (schedule_stress) when advising
+session placement — cite hours and numbers, and keep claims observational.
 
 End your reply with a fenced ```json block:
 {"headline": str, "wins": [str], "flags": [str], "focus_next_week": [str]}
@@ -112,6 +115,13 @@ def build_week_summary(db: Session, week_start: date, week_end: date) -> dict:
     summaries = db.scalars(
         select(DailySummary).where(DailySummary.day >= week_start, DailySummary.day <= week_end)
     ).all()
+    calendar_events = db.scalars(select(CalendarEvent).where(
+        CalendarEvent.start >= start_dt, CalendarEvent.start < end_dt)).all()
+    wellness = db.scalars(select(WellnessSample).where(
+        WellnessSample.recorded_at >= start_dt, WellnessSample.recorded_at < end_dt,
+        WellnessSample.kind.in_(["stress_score", "hrv_ms"]))).all()
+    tz = get_settings().home_timezone
+    week_load = calendar_sync.meeting_load(calendar_events, tz)
     sleeps = [s.sleep_duration_min for s in summaries if s.sleep_duration_min]
     moods = [s.mood_valence for s in summaries if s.mood_valence is not None]
 
@@ -123,6 +133,13 @@ def build_week_summary(db: Session, week_start: date, week_end: date) -> dict:
         "subjective": subjective,
         "subjective_flags": correlations.subjective_flags(activities, voice_logs),
         "interference_flags": interference.detect(activities),
+        "schedule_stress": {
+            "meeting_minutes": week_load["total_minutes"],
+            "after_hours_meetings": week_load["after_hours_count"],
+            "max_back_to_back": week_load["max_back_to_back"],
+            "findings": [f["message"] for f in stress_profile.schedule_overlay(
+                calendar_events, wellness, summaries, tz)],
+        },
         "conditions": {
             "avg_sleep_min": round(sum(sleeps) / len(sleeps)) if sleeps else None,
             "avg_mood_valence": round(sum(moods) / len(moods), 2) if moods else None,
@@ -167,6 +184,10 @@ def _fallback_report(summary: dict) -> tuple[str, dict]:
         "## Subjective",
         f"{len(summary.get('subjective', []))} voice log(s), "
         f"{len(summary.get('subjective_flags', []))} subjective flag(s).",
+        "",
+        "## Schedule",
+        f"{summary.get('schedule_stress', {}).get('meeting_minutes', 0)} min of meetings, "
+        f"{len(summary.get('schedule_stress', {}).get('findings', []))} stress finding(s).",
     ])
     highlights = {
         "headline": f"{a['km']} km aerobic, {int(l['vert_m'])} m vert, "
