@@ -1,0 +1,66 @@
+package com.darius.splitrail.network
+
+import com.darius.splitrail.data.model.AltiBlock
+import com.darius.splitrail.data.model.Conditions
+import com.darius.splitrail.data.model.DashboardData
+import com.darius.splitrail.data.model.EffortMode
+import com.darius.splitrail.data.model.GateBlock
+import com.darius.splitrail.data.model.IntegrationState
+import com.darius.splitrail.data.model.IntegrationsStatus
+import com.darius.splitrail.data.model.RailEntry
+import com.darius.splitrail.data.model.StripBlock
+import java.time.LocalDate
+import kotlin.math.roundToInt
+
+// Field names are snake_case on purpose — they mirror the FastAPI JSON payloads
+// one-to-one (same convention as ListManagerApp's DTOs.kt).
+
+data class ConditionsDTO(val sleep_min: Int?, val resting_hr: Int?, val mood_valence: Double?)
+data class RailEntryDTO(val day: String, val mode: String, val type: String, val duration_s: Int, val best_split: Double?, val distance_m: Double?, val vert_m: Double?)
+data class GateBlockDTO(val best_split: Double?, val pb: Double, val session_note: String?, val splits: List<Double>?)
+data class StripBlockDTO(val week_km: Double, val long_run_km: Double, val z2_pct: Double?, val pace_trend: List<Double>?)
+data class AltiBlockDTO(val vert_m: Double, val goal_m: Double, val load_kg: Double?, val carries: Int)
+data class DashboardDTO(val week: Int, val conditions: ConditionsDTO, val rail: List<RailEntryDTO>?, val gate: GateBlockDTO, val strip: StripBlockDTO, val alti: AltiBlockDTO)
+
+data class AuthorizeUrlDTO(val authorize_url: String)
+data class IntegrationStateDTO(val connected: Boolean, val athlete_id: String?, val last_synced_at: String?)
+data class IntegrationsStatusDTO(val strava: IntegrationStateDTO, val spotify: IntegrationStateDTO)
+data class SyncResultDTO(val synced: Int)
+
+// ---- DTO -> domain mappers (cf. ListManagerApp's toEntity()) ----
+
+private fun dayIndexOf(isoDate: String): Int =
+    runCatching { LocalDate.parse(isoDate).dayOfWeek.value - 1 }.getOrDefault(0)
+
+fun RailEntryDTO.toModel() = RailEntry(
+    dayIndex = dayIndexOf(day),
+    mode = runCatching { EffortMode.valueOf(mode.uppercase()) }.getOrDefault(EffortMode.AEROBIC),
+    durationS = duration_s,
+    bestSplit = best_split,
+    distanceM = distance_m,
+    vertM = vert_m,
+)
+
+fun DashboardDTO.toModel() = DashboardData(
+    week = week,
+    conditions = Conditions(conditions.sleep_min, conditions.resting_hr, conditions.mood_valence),
+    rail = rail.orEmpty().map { it.toModel() },
+    gate = GateBlock(gate.best_split, gate.pb, gate.session_note, gate.splits.orEmpty()),
+    strip = StripBlock(
+        weekKm = strip.week_km,
+        longRunKm = strip.long_run_km,
+        z2Pct = strip.z2_pct?.roundToInt(),
+        paceTrend = strip.pace_trend.orEmpty().map { it.roundToInt() },
+    ),
+    alti = AltiBlock(alti.vert_m, alti.goal_m, alti.load_kg, alti.carries),
+)
+
+fun IntegrationStateDTO.toModel() = IntegrationState(
+    connected = connected,
+    lastSyncedAt = last_synced_at?.take(16)?.replace('T', ' '),
+)
+
+fun IntegrationsStatusDTO.toModel() = IntegrationsStatus(
+    strava = strava.toModel(),
+    spotify = spotify.toModel(),
+)

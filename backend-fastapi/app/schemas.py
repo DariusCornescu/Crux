@@ -58,6 +58,23 @@ class ChatOut(BaseModel):
     reply: str
 
 
+# ---- Integrations ----
+
+class IntegrationState(BaseModel):
+    connected: bool = False
+    athlete_id: str | None = None
+    last_synced_at: datetime | None = None
+
+
+class IntegrationsStatus(BaseModel):
+    strava: IntegrationState
+    spotify: IntegrationState
+
+
+class SyncResult(BaseModel):
+    synced: int
+
+
 # ---- Dashboard payload: one block per instrument ----
 
 class Conditions(BaseModel):

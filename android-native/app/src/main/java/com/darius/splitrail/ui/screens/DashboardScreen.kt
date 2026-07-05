@@ -13,58 +13,78 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.darius.splitrail.data.model.Conditions
 import com.darius.splitrail.data.model.DashboardData
-import com.darius.splitrail.data.sampleDashboard
 import com.darius.splitrail.ui.components.AltiInstrument
+import com.darius.splitrail.ui.components.ErrorStrip
 import com.darius.splitrail.ui.components.GateInstrument
 import com.darius.splitrail.ui.components.HairlineRule
+import com.darius.splitrail.ui.components.LoadingStrip
 import com.darius.splitrail.ui.components.RailTape
 import com.darius.splitrail.ui.components.StripInstrument
 import com.darius.splitrail.ui.theme.GateRed
 import com.darius.splitrail.ui.theme.Graphite
+import com.darius.splitrail.ui.viewmodel.DashboardViewModel
 import java.util.Locale
 
-/** Renders sampleDashboard until the API client lands (build step 3). */
 @Composable
-fun DashboardScreen(data: DashboardData = sampleDashboard) {
+fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
+    val uiState by viewModel.uiState.collectAsState()
+
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        BezelHeader(week = data.week)
-        ConditionsStrip(data.conditions)
-        HairlineRule()
+        BezelHeader(week = uiState.data?.week)
 
-        // THE RAIL — signature element
-        Column(Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
-            Text("THE RAIL — WK ${data.week}", style = MaterialTheme.typography.titleSmall)
-            Spacer(Modifier.height(4.dp))
-            RailTape(data.rail)
+        when {
+            uiState.isLoading && uiState.data == null -> LoadingStrip()
+            uiState.error != null && uiState.data == null ->
+                ErrorStrip(uiState.error ?: "NO SIGNAL", onRetry = viewModel::load)
+            uiState.data != null -> DashboardBody(uiState.data!!)
         }
-        HairlineRule()
-
-        GateInstrument(data.gate)
-        HairlineRule()
-
-        StripInstrument(data.strip)
-        HairlineRule()
-
-        AltiInstrument(data.alti)
 
         Spacer(Modifier.height(24.dp))
     }
 }
 
 @Composable
-private fun BezelHeader(week: Int) {
+private fun DashboardBody(data: DashboardData) {
+    ConditionsStrip(data.conditions)
+    HairlineRule()
+
+    // THE RAIL — signature element
+    Column(Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
+        Text("THE RAIL — WK ${data.week}", style = MaterialTheme.typography.titleSmall)
+        Spacer(Modifier.height(4.dp))
+        RailTape(data.rail)
+    }
+    HairlineRule()
+
+    GateInstrument(data.gate)
+    HairlineRule()
+
+    StripInstrument(data.strip)
+    HairlineRule()
+
+    AltiInstrument(data.alti)
+}
+
+@Composable
+private fun BezelHeader(week: Int?) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text("SPLITRAIL", style = MaterialTheme.typography.titleSmall)
-        Text("WK $week", style = MaterialTheme.typography.labelMedium.copy(color = Graphite))
+        Text(
+            week?.let { "WK $it" } ?: "--",
+            style = MaterialTheme.typography.labelMedium.copy(color = Graphite),
+        )
     }
 }
 

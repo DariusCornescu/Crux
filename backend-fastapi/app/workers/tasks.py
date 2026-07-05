@@ -1,10 +1,21 @@
+from app.database import SessionLocal
 from app.workers.celery_app import celery_app
 
 
 @celery_app.task
-def sync_strava() -> str:
-    """Build-order step 2: pull new activities via Strava API, upsert Activity rows."""
-    return "todo"
+def sync_strava() -> int:
+    from app import strava
+
+    db = SessionLocal()
+    try:
+        from sqlalchemy import select
+
+        from app.models import OAuthToken
+        if db.scalar(select(OAuthToken).where(OAuthToken.provider == "strava")) is None:
+            return 0  # not connected yet — nothing to do
+        return strava.sync_activities(db)
+    finally:
+        db.close()
 
 
 @celery_app.task
