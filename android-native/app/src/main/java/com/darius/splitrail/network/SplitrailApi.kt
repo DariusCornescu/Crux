@@ -1,6 +1,7 @@
 package com.darius.splitrail.network
 
 import retrofit2.Response
+import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -28,4 +29,10 @@ interface SplitrailApi {
 
     @POST("integrations/{provider}/sync")
     suspend fun triggerSync(@Path("provider") provider: String): Response<SyncResultDTO>
+
+    @GET("chat/history")
+    suspend fun getChatHistory(@Query("limit") limit: Int = 50): Response<List<ChatMessageDTO>>
+
+    @POST("chat")
+    suspend fun sendChatMessage(@Body body: ChatRequestDTO): Response<ChatReplyDTO>
 }

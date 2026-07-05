@@ -7,6 +7,7 @@ import com.darius.splitrail.data.model.EffortMode
 import com.darius.splitrail.data.model.GateBlock
 import com.darius.splitrail.data.model.IntegrationState
 import com.darius.splitrail.data.model.IntegrationsStatus
+import com.darius.splitrail.data.model.ChatMessage
 import com.darius.splitrail.data.model.RailEntry
 import com.darius.splitrail.data.model.Report
 import com.darius.splitrail.data.model.StripBlock
@@ -78,4 +79,17 @@ fun IntegrationStateDTO.toModel() = IntegrationState(
 fun IntegrationsStatusDTO.toModel() = IntegrationsStatus(
     strava = strava.toModel(),
     spotify = spotify.toModel(),
+)
+
+// ---- Chat (step 6) ----
+
+data class ChatRequestDTO(val message: String)
+data class ChatReplyDTO(val reply: String)
+data class ChatMessageDTO(val id: Long, val role: String, val content: String, val created_at: String)
+
+fun ChatMessageDTO.toModel() = ChatMessage(
+    id = id,
+    role = role,
+    content = content,
+    createdAt = created_at.take(16).replace('T', ' '),
 )
