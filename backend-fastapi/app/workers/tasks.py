@@ -60,3 +60,17 @@ def wellness_rollup() -> int:
         return wellness.rollup_daily(db)
     finally:
         db.close()
+
+
+@celery_app.task
+def sync_calendar() -> int:
+    from app import calendar_sync
+    from app.config import get_settings
+
+    if not get_settings().calendar_ics_url:
+        return 0
+    db = SessionLocal()
+    try:
+        return calendar_sync.sync_ics(db)
+    finally:
+        db.close()

@@ -22,6 +22,10 @@ celery_app.conf.beat_schedule = {
     },
 }
 
+celery_app.conf.beat_schedule["sync-calendar"] = {
+    "task": "app.workers.tasks.sync_calendar",
+    "schedule": crontab(minute=15),
+}
 celery_app.conf.beat_schedule["wellness-rollup"] = {
     "task": "app.workers.tasks.wellness_rollup",
     "schedule": crontab(hour=4, minute=30),

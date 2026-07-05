@@ -141,6 +141,7 @@ class IntegrationState(BaseModel):
 class IntegrationsStatus(BaseModel):
     strava: IntegrationState
     spotify: IntegrationState
+    calendar: IntegrationState = IntegrationState()
 
 
 class SyncResult(BaseModel):

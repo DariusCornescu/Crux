@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import spotify, strava
+from app import calendar_sync, spotify, strava
 from app.config import get_settings
 from app.database import get_db
 from app.models import OAuthToken
@@ -39,9 +39,16 @@ def _state(db: Session, provider: str) -> IntegrationState:
                             last_synced_at=token.last_synced_at)
 
 
+def _calendar_state(db: Session) -> IntegrationState:
+    state = _state(db, calendar_sync.PROVIDER)
+    return IntegrationState(connected=bool(get_settings().calendar_ics_url),
+                            last_synced_at=state.last_synced_at)
+
+
 @router.get("/status", response_model=IntegrationsStatus)
 def status(db: Session = Depends(get_db)):
-    return IntegrationsStatus(strava=_state(db, "strava"), spotify=_state(db, "spotify"))
+    return IntegrationsStatus(strava=_state(db, "strava"), spotify=_state(db, "spotify"),
+                              calendar=_calendar_state(db))
 
 
 # ---- Strava ----
@@ -109,5 +116,15 @@ def spotify_callback(code: str = "", error: str = "", db: Session = Depends(get_
 def spotify_sync(db: Session = Depends(get_db)):
     try:
         return SyncResult(synced=spotify.sync_recently_played(db))
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# ---- Work calendar (published ICS feed — see calendar_sync.py) ----
+
+@router.post("/calendar/sync", response_model=SyncResult)
+def calendar_sync_now(db: Session = Depends(get_db)):
+    try:
+        return SyncResult(synced=calendar_sync.sync_ics(db))
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))

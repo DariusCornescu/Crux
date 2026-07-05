@@ -8,7 +8,7 @@ Effort modes — the physiological backbone of the whole app:
 import enum
 from datetime import date, datetime
 
-from sqlalchemy import JSON, Date, DateTime, Enum, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, Boolean, Date, DateTime, Enum, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -167,3 +167,23 @@ class WellnessSample(Base):
     kind: Mapped[str] = mapped_column(String(16))    # see wellness.ALLOWED_KINDS
     value: Mapped[float] = mapped_column(Float)
     source: Mapped[str] = mapped_column(String(16), default="health_connect")
+
+
+class CalendarEvent(Base):
+    """Work-calendar busy blocks (stress-schedule-wearable spec, Phase B).
+
+    Privacy: no meeting titles or attendees are stored — only timing/shape
+    plus a salted SHA-256 of the subject for deduplication.
+    """
+    __tablename__ = "calendar_events"
+    __table_args__ = (UniqueConstraint("source", "subject_hash", "start",
+                                       name="uq_calendar_source_subject_start"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    start: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    end: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    busy_status: Mapped[str] = mapped_column(String(16), default="busy")
+    attendee_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    is_recurring: Mapped[bool] = mapped_column(Boolean, default=False)
+    subject_hash: Mapped[str] = mapped_column(String(64))
+    source: Mapped[str] = mapped_column(String(16), default="ics")

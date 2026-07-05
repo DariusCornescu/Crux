@@ -42,9 +42,10 @@ def db():
 
 
 class FakeResponse:
-    def __init__(self, json_data, status_code=200):
+    def __init__(self, json_data=None, status_code=200, text=""):
         self._json = json_data
         self.status_code = status_code
+        self.text = text
 
     def json(self):
         return self._json

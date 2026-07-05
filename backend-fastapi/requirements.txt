@@ -10,3 +10,5 @@ anthropic>=0.40
 openai>=1.0
 alembic>=1.13
 firebase-admin>=6.5
+icalendar>=6.0
+recurring-ical-events>=3.0

@@ -26,6 +26,11 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     openrouter_model: str = "anthropic/claude-sonnet-4.6"
 
+    # Published-ICS work calendar (Outlook web -> Settings -> Calendar ->
+    # Shared calendars -> Publish). User-level, no OAuth/admin consent.
+    calendar_ics_url: str = ""
+    home_timezone: str = "Europe/Bucharest"
+
     fcm_service_account_json_path: str = ""
 
     @field_validator("database_url")
