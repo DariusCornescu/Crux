@@ -38,6 +38,11 @@ class ActivityCreate(BaseModel):
     perceived_effort: int | None = None
 
 
+class PacingEstimateIn(BaseModel):
+    distance_m: float
+    elevation_gain_m: float
+
+
 class ReportOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
