@@ -39,7 +39,7 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        BezelHeader(week = uiState.data?.week)
+        BezelHeader(week = uiState.data?.week, isDemo = uiState.data?.isDemo == true)
 
         when {
             uiState.isLoading && uiState.data == null -> LoadingStrip()
@@ -79,17 +79,26 @@ private fun DashboardBody(data: DashboardData) {
 }
 
 @Composable
-private fun BezelHeader(week: Int?) {
+private fun BezelHeader(week: Int?, isDemo: Boolean) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text("SPLITRAIL", style = MaterialTheme.typography.titleSmall)
-        Text(
-            week?.let { "WK $it" } ?: "--",
-            style = MaterialTheme.typography.labelMedium.copy(color = Graphite),
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (isDemo) {
+                Text(
+                    "DEMO SIGNAL",
+                    style = MaterialTheme.typography.labelSmall.copy(color = GateRed),
+                )
+                Spacer(Modifier.padding(horizontal = 6.dp))
+            }
+            Text(
+                week?.let { "WK $it" } ?: "--",
+                style = MaterialTheme.typography.labelMedium.copy(color = Graphite),
+            )
+        }
     }
 }
 

@@ -39,9 +39,12 @@ def generate_weekly_report() -> int:
     """Monday 05:00 UTC — report on the week that just ended. FCM push is step 7."""
     from app import report_generator
 
+    from app import push
+
     db = SessionLocal()
     try:
         report = report_generator.generate_weekly_report(db)
+        push.send_report_notification(db, report)  # best effort
         return report.id
     finally:
         db.close()

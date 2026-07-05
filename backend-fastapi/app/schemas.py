@@ -71,6 +71,11 @@ class ChatMessageOut(BaseModel):
     created_at: datetime
 
 
+class DeviceRegisterIn(BaseModel):
+    token: str
+    platform: str = "android"
+
+
 # ---- Integrations ----
 
 class IntegrationState(BaseModel):
@@ -134,6 +139,7 @@ class AltiBlock(BaseModel):
 
 class DashboardOut(BaseModel):
     week: int
+    demo: bool = False
     conditions: Conditions
     mood_trend: list[MoodPoint] = []
     rail: list[RailEntry]

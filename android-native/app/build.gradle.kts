@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    // Step 7: uncomment after dropping google-services.json into app/
+    // id("com.google.gms.google-services")
 }
 
 android {
@@ -13,7 +15,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "0.2.0"
     }
 
     buildTypes {
@@ -55,6 +57,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
+
+    // FCM (step 7) — compiles without Firebase config; runtime is guarded
+    implementation("com.google.firebase:firebase-messaging:24.1.0")
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

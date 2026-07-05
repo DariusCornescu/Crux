@@ -23,7 +23,7 @@ data class RailEntryDTO(val day: String, val mode: String, val type: String, val
 data class GateBlockDTO(val best_split: Double?, val pb: Double, val session_note: String?, val splits: List<Double>?)
 data class StripBlockDTO(val week_km: Double, val long_run_km: Double, val z2_pct: Double?, val pace_trend: List<Double>?)
 data class AltiBlockDTO(val vert_m: Double, val goal_m: Double, val load_kg: Double?, val carries: Int)
-data class DashboardDTO(val week: Int, val conditions: ConditionsDTO, val mood_trend: List<MoodPointDTO>?, val rail: List<RailEntryDTO>?, val gate: GateBlockDTO, val strip: StripBlockDTO, val alti: AltiBlockDTO)
+data class DashboardDTO(val week: Int, val demo: Boolean?, val conditions: ConditionsDTO, val mood_trend: List<MoodPointDTO>?, val rail: List<RailEntryDTO>?, val gate: GateBlockDTO, val strip: StripBlockDTO, val alti: AltiBlockDTO)
 
 data class ReportDTO(val id: Long, val kind: String, val period_start: String, val period_end: String, val body_md: String, val highlights: Map<String, Any?>?, val created_at: String)
 
@@ -48,6 +48,7 @@ fun RailEntryDTO.toModel() = RailEntry(
 
 fun DashboardDTO.toModel() = DashboardData(
     week = week,
+    isDemo = demo == true,
     conditions = Conditions(conditions.sleep_min, conditions.resting_hr, conditions.mood_valence),
     moodTrend = mood_trend.orEmpty().map { it.valence },
     rail = rail.orEmpty().map { it.toModel() },
@@ -93,3 +94,7 @@ fun ChatMessageDTO.toModel() = ChatMessage(
     content = content,
     createdAt = created_at.take(16).replace('T', ' '),
 )
+
+// ---- Devices (step 7) ----
+
+data class DeviceRegisterDTO(val token: String, val platform: String = "android")

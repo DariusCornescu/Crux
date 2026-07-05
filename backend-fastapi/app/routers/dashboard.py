@@ -32,6 +32,7 @@ def _mood_trend(db: Session, days: int = 14) -> list[MoodPoint]:
 def _demo(week_start: date) -> DashboardOut:
     today = date.today()
     return DashboardOut(
+        demo=True,
         week=week_start.isocalendar().week,
         conditions=Conditions(sleep_min=432, resting_hr=52, mood_valence=0.64),
         mood_trend=[

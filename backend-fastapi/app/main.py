@@ -2,7 +2,7 @@ import os
 
 from fastapi import FastAPI
 
-from app.routers import activities, chat, dashboard, health, integrations, reports
+from app.routers import activities, chat, dashboard, devices, health, integrations, reports
 
 
 # Schema is managed by Alembic (see backend-fastapi/alembic/). On startup we
@@ -25,7 +25,7 @@ def _run_migrations_to_head() -> None:
 if os.getenv("RUN_MIGRATIONS", "true").lower() != "false":
     _run_migrations_to_head()
 
-app = FastAPI(title="Splitrail API", version="0.1.0")
+app = FastAPI(title="Splitrail API", version="0.2.0")
 
 app.include_router(health.router)
 app.include_router(dashboard.router)
@@ -33,3 +33,4 @@ app.include_router(activities.router)
 app.include_router(reports.router)
 app.include_router(chat.router)
 app.include_router(integrations.router)
+app.include_router(devices.router)

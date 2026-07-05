@@ -35,4 +35,7 @@ interface SplitrailApi {
 
     @POST("chat")
     suspend fun sendChatMessage(@Body body: ChatRequestDTO): Response<ChatReplyDTO>
+
+    @POST("devices")
+    suspend fun registerDevice(@Body body: DeviceRegisterDTO): Response<Unit>
 }
