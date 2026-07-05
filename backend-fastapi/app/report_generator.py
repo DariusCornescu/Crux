@@ -8,13 +8,14 @@ can be built and tested before the key lands. FCM push is step 7.
 import json
 import logging
 import re
+from pathlib import Path
 from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import llm
-from app import correlations
+from app import correlations, interference
 from app.models import Activity, DailySummary, EffortMode, Report, VoiceLog
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,8 @@ interference effects between modes (e.g. heavy aerobic volume blunting sprint
 speed) when the data suggests them. No pleasantries, no generic advice.
 When subjective reports are present, cross-reference them against the objective
 numbers and explain correlations concretely (cite the day and the metric).
+For each interference flag provided, explain the mechanism using the REFERENCE,
+not just a warning.
 
 End your reply with a fenced ```json block:
 {"headline": str, "wins": [str], "flags": [str], "focus_next_week": [str]}
@@ -119,6 +122,7 @@ def build_week_summary(db: Session, week_start: date, week_end: date) -> dict:
         "loaded": loaded,
         "subjective": subjective,
         "subjective_flags": correlations.subjective_flags(activities, voice_logs),
+        "interference_flags": interference.detect(activities),
         "conditions": {
             "avg_sleep_min": round(sum(sleeps) / len(sleeps)) if sleeps else None,
             "avg_mood_valence": round(sum(moods) / len(moods), 2) if moods else None,
@@ -172,9 +176,19 @@ def _fallback_report(summary: dict) -> tuple[str, dict]:
     return body, highlights
 
 
+def _knowledge_text() -> str:
+    path = Path(__file__).parent / "knowledge" / "concurrent_training.md"
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:  # missing knowledge file must never kill a report
+        logger.warning("knowledge file missing: %s", path)
+        return ""
+
+
 def _claude_report(summary: dict) -> tuple[str, dict]:
+    system = SYSTEM_PROMPT + "\n\nREFERENCE (concurrent training):\n" + _knowledge_text()
     text = llm.complete(
-        system=SYSTEM_PROMPT,
+        system=system,
         messages=[{"role": "user", "content": json.dumps(summary)}],
         max_tokens=2000,
     )
