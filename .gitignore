@@ -1,7 +1,11 @@
 __pycache__/
 *.pyc
+.pytest_cache/
 .env
+secrets/
+.claude/
 /android-native/.gradle/
+/android-native/.kotlin/
 /android-native/local.properties
 /android-native/build/
 /android-native/app/build/
