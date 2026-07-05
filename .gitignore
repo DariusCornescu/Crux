@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+/android-native/.gradle/
+/android-native/local.properties
+/android-native/build/
+/android-native/app/build/
+.idea/
+backend-fastapi/tests/test.db
+*.db
