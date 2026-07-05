@@ -8,6 +8,7 @@ import com.darius.splitrail.data.model.GateBlock
 import com.darius.splitrail.data.model.IntegrationState
 import com.darius.splitrail.data.model.IntegrationsStatus
 import com.darius.splitrail.data.model.RailEntry
+import com.darius.splitrail.data.model.Report
 import com.darius.splitrail.data.model.StripBlock
 import java.time.LocalDate
 import kotlin.math.roundToInt
@@ -22,6 +23,8 @@ data class GateBlockDTO(val best_split: Double?, val pb: Double, val session_not
 data class StripBlockDTO(val week_km: Double, val long_run_km: Double, val z2_pct: Double?, val pace_trend: List<Double>?)
 data class AltiBlockDTO(val vert_m: Double, val goal_m: Double, val load_kg: Double?, val carries: Int)
 data class DashboardDTO(val week: Int, val conditions: ConditionsDTO, val mood_trend: List<MoodPointDTO>?, val rail: List<RailEntryDTO>?, val gate: GateBlockDTO, val strip: StripBlockDTO, val alti: AltiBlockDTO)
+
+data class ReportDTO(val id: Long, val kind: String, val period_start: String, val period_end: String, val body_md: String, val highlights: Map<String, Any?>?, val created_at: String)
 
 data class AuthorizeUrlDTO(val authorize_url: String)
 data class IntegrationStateDTO(val connected: Boolean, val athlete_id: String?, val last_synced_at: String?)
@@ -55,6 +58,16 @@ fun DashboardDTO.toModel() = DashboardData(
         paceTrend = strip.pace_trend.orEmpty().map { it.roundToInt() },
     ),
     alti = AltiBlock(alti.vert_m, alti.goal_m, alti.load_kg, alti.carries),
+)
+
+fun ReportDTO.toModel() = Report(
+    id = id,
+    kind = kind,
+    periodStart = period_start,
+    periodEnd = period_end,
+    bodyMd = body_md,
+    headline = highlights?.get("headline") as? String,
+    createdAt = created_at,
 )
 
 fun IntegrationStateDTO.toModel() = IntegrationState(

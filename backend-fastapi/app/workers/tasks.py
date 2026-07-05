@@ -35,6 +35,13 @@ def sync_spotify() -> int:
 
 
 @celery_app.task
-def generate_weekly_report() -> str:
-    """Build-order step 5: aggregate week -> LLM -> Report -> push (step 7)."""
-    return "todo"
+def generate_weekly_report() -> int:
+    """Monday 05:00 UTC — report on the week that just ended. FCM push is step 7."""
+    from app import report_generator
+
+    db = SessionLocal()
+    try:
+        report = report_generator.generate_weekly_report(db)
+        return report.id
+    finally:
+        db.close()

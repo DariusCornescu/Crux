@@ -50,6 +50,10 @@ class ReportOut(BaseModel):
     created_at: datetime
 
 
+class ReportGenerateIn(BaseModel):
+    week_start: date | None = None
+
+
 class ChatIn(BaseModel):
     message: str
 

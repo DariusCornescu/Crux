@@ -20,13 +20,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.darius.splitrail.ui.components.HairlineRule
 import com.darius.splitrail.ui.screens.ChatScreen
 import com.darius.splitrail.ui.screens.DashboardScreen
+import com.darius.splitrail.ui.screens.ReportDetailScreen
 import com.darius.splitrail.ui.screens.ReportsScreen
 import com.darius.splitrail.ui.screens.SettingsScreen
 import com.darius.splitrail.ui.theme.GateRed
@@ -56,7 +59,15 @@ fun NavGraph() {
         ) {
             composable("dashboard") { DashboardScreen() }
             composable("chat") { ChatScreen() }
-            composable("reports") { ReportsScreen() }
+            composable("reports") {
+                ReportsScreen(onOpenReport = { id -> nav.navigate("reports/$id") })
+            }
+            composable(
+                route = "reports/{reportId}",
+                arguments = listOf(navArgument("reportId") { type = NavType.LongType }),
+            ) {
+                ReportDetailScreen(onBack = { nav.popBackStack() })
+            }
             composable("settings") { SettingsScreen() }
         }
     }
@@ -72,7 +83,8 @@ private fun BezelNav(nav: NavHostController) {
         HairlineRule()
         Row(Modifier.fillMaxWidth()) {
             DESTS.forEach { dest ->
-                val selected = currentRoute == dest.route
+                val selected = currentRoute == dest.route ||
+                    (dest.route == "reports" && currentRoute?.startsWith("reports/") == true)
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier

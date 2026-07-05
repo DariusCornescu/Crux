@@ -4,11 +4,21 @@ import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface SplitrailApi {
 
     @GET("dashboard/summary")
     suspend fun getDashboard(): Response<DashboardDTO>
+
+    @GET("reports")
+    suspend fun getReports(@Query("limit") limit: Int = 20): Response<List<ReportDTO>>
+
+    @GET("reports/{id}")
+    suspend fun getReport(@Path("id") id: Long): Response<ReportDTO>
+
+    @POST("reports/generate")
+    suspend fun generateReport(): Response<ReportDTO>
 
     @GET("integrations/status")
     suspend fun getIntegrationsStatus(): Response<IntegrationsStatusDTO>
