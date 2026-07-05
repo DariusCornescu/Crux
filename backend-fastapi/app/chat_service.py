@@ -12,7 +12,7 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.config import get_settings
+from app import llm
 from app.models import Activity, ChatMessage, DailySummary, EffortMode, Report
 
 logger = logging.getLogger(__name__)
@@ -93,22 +93,16 @@ def _fallback_reply(context: dict) -> str:
 
 
 def _claude_reply(context: dict, history: list[ChatMessage], message: str) -> str:
-    import anthropic
-
-    s = get_settings()
-    client = anthropic.Anthropic(api_key=s.anthropic_api_key)
     messages = [
         {"role": "user" if m.role == "user" else "assistant", "content": m.content}
         for m in history
     ]
     messages.append({"role": "user", "content": message})
-    response = client.messages.create(
-        model=s.anthropic_model,
-        max_tokens=1000,
+    return llm.complete(
         system=SYSTEM_PROMPT + json.dumps(context),
         messages=messages,
+        max_tokens=1000,
     )
-    return "".join(block.text for block in response.content if block.type == "text")
 
 
 def send_message(db: Session, message: str) -> str:
@@ -119,7 +113,7 @@ def send_message(db: Session, message: str) -> str:
     db.add(ChatMessage(role="user", content=message))
     context = build_context(db)
 
-    if get_settings().anthropic_api_key:
+    if llm.is_configured():
         try:
             reply = _claude_reply(context, history, message)
         except Exception as e:  # store the failure as the reply — visible in the UI

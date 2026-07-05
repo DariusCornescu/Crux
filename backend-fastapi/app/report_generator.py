@@ -13,7 +13,7 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.config import get_settings
+from app import llm
 from app.models import Activity, DailySummary, EffortMode, Report
 
 logger = logging.getLogger(__name__)
@@ -145,17 +145,11 @@ def _fallback_report(summary: dict) -> tuple[str, dict]:
 
 
 def _claude_report(summary: dict) -> tuple[str, dict]:
-    import anthropic
-
-    s = get_settings()
-    client = anthropic.Anthropic(api_key=s.anthropic_api_key)
-    message = client.messages.create(
-        model=s.anthropic_model,
-        max_tokens=2000,
+    text = llm.complete(
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": json.dumps(summary)}],
+        max_tokens=2000,
     )
-    text = "".join(block.text for block in message.content if block.type == "text")
 
     highlights: dict = {}
     match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
@@ -172,7 +166,7 @@ def generate_weekly_report(db: Session, week_start: date | None = None) -> Repor
     start, end = week_bounds(week_start)
     summary = build_week_summary(db, start, end)
 
-    if get_settings().anthropic_api_key:
+    if llm.is_configured():
         body, highlights = _claude_report(summary)
     else:
         body, highlights = _fallback_report(summary)
