@@ -149,3 +149,21 @@ class VoiceLog(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)         # subjective summary
     extraction_method: Mapped[str] = mapped_column(String(16), default="none")  # deterministic|llm|none
     extracted: Mapped[dict | None] = mapped_column(JSON, nullable=True)    # full struct: {symptoms:[], terrain:[], ...}
+
+
+class WellnessSample(Base):
+    """Intraday wearable data (build: stress-schedule-wearable Phase A).
+
+    Device-agnostic: Health Connect, vendor cloud adapters, or manual POSTs
+    all land here. Intraday timestamps on purpose — the hour-of-day stress
+    profile needs time resolution, not daily averages.
+    """
+    __tablename__ = "wellness_samples"
+    __table_args__ = (UniqueConstraint("source", "kind", "recorded_at",
+                                       name="uq_wellness_source_kind_time"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    kind: Mapped[str] = mapped_column(String(16))    # see wellness.ALLOWED_KINDS
+    value: Mapped[float] = mapped_column(Float)
+    source: Mapped[str] = mapped_column(String(16), default="health_connect")

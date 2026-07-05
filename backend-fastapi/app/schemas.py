@@ -1,6 +1,6 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from app.models import ActivityType, EffortMode
 
@@ -101,6 +101,33 @@ class ChatMessageOut(BaseModel):
 class DeviceRegisterIn(BaseModel):
     token: str
     platform: str = "android"
+
+
+# ---- Wellness (wearable ingestion) ----
+
+class WellnessSampleIn(BaseModel):
+    recorded_at: datetime
+    kind: str
+    value: float
+    source: str = "health_connect"
+
+    @field_validator("kind")
+    @classmethod
+    def _known_kind(cls, v: str) -> str:
+        from app.wellness import ALLOWED_KINDS
+
+        if v not in ALLOWED_KINDS:
+            raise ValueError(f"unknown kind {v!r} (allowed: {sorted(ALLOWED_KINDS)})")
+        return v
+
+
+class WellnessBatchIn(BaseModel):
+    samples: list[WellnessSampleIn]
+
+
+class WellnessIngestOut(BaseModel):
+    ingested: int
+    duplicates: int
 
 
 # ---- Integrations ----

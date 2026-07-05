@@ -48,3 +48,15 @@ def generate_weekly_report() -> int:
         return report.id
     finally:
         db.close()
+
+
+@celery_app.task
+def wellness_rollup() -> int:
+    """Daily safety net — ingest already triggers the roll-up inline."""
+    from app import wellness
+
+    db = SessionLocal()
+    try:
+        return wellness.rollup_daily(db)
+    finally:
+        db.close()
