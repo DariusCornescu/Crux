@@ -12,8 +12,8 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import llm
-from app.models import Activity, ChatMessage, DailySummary, EffortMode, Report
+from app import audio_priming, llm
+from app.models import Activity, ChatMessage, DailySummary, EffortMode, ListeningSession, Report
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +59,9 @@ def build_context(db: Session, days: int = 28) -> dict:
     latest_report = db.scalars(
         select(Report).order_by(Report.created_at.desc()).limit(1)
     ).first()
+    listening = db.scalars(
+        select(ListeningSession).where(ListeningSession.played_at >= since)
+    ).all()
 
     return {
         "window_days": days,
@@ -71,6 +74,7 @@ def build_context(db: Session, days: int = 28) -> dict:
             for s in summaries
         ],
         "latest_report_highlights": latest_report.highlights if latest_report else None,
+        "audio_priming": audio_priming.best_session_audio(activities, listening),
         "activities": [
             {"day": a.start_time.date().isoformat(), "type": a.type.value,
              "mode": a.mode.value, "name": a.name, "duration_s": a.duration_s,
