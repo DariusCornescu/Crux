@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Rail distilled: gate tick / aerobic band / loaded peak on one baseline -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- rail baseline -->
+    <path
+        android:pathData="M24,66 L84,66"
+        android:strokeColor="#16181D"
+        android:strokeWidth="2" />
+    <!-- gate tick (explosive) -->
+    <path
+        android:pathData="M34,50 L34,74"
+        android:strokeColor="#C33B2A"
+        android:strokeWidth="3" />
+    <!-- aerobic band -->
+    <path
+        android:pathData="M44,66 L62,66"
+        android:strokeColor="#2F5D7C"
+        android:strokeWidth="7" />
+    <!-- loaded relief peak -->
+    <path
+        android:pathData="M66,66 L74,52 L82,66 Z"
+        android:fillColor="#6B6349" />
+</vector>
