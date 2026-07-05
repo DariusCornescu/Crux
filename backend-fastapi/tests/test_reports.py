@@ -37,3 +37,22 @@ def test_generate_fallback_report(client):
     assert detail.status_code == 200
     assert client.get("/reports/999").status_code == 404
 
+
+def test_week_summary_includes_subjective_block(client, db):
+    monday = _seed_week(client)
+    log_day = datetime.combine(monday + timedelta(days=3),
+                               datetime.min.time(), tzinfo=timezone.utc) + timedelta(hours=9)
+    client.post("/voice-logs", json={"transcript": "picioare grele azi",
+                                     "created_at": log_day.isoformat()})
+
+    from app.report_generator import build_week_summary
+    summary = build_week_summary(db, monday, monday + timedelta(days=6))
+    assert len(summary["subjective"]) == 1
+    entry = summary["subjective"][0]
+    assert entry["symptoms"] == ["heavy_legs"]
+    assert entry["day"] == (monday + timedelta(days=3)).isoformat()
+    assert "subjective_flags" in summary
+
+    # Fallback report mentions the subjective data
+    report = client.post("/reports/generate", json={}).json()
+    assert "Subjective" in report["body_md"]

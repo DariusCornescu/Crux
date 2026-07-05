@@ -14,7 +14,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app import llm
-from app.models import Activity, DailySummary, EffortMode, Report
+from app import correlations
+from app.models import Activity, DailySummary, EffortMode, Report, VoiceLog
 
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,8 @@ Write a weekly report in Markdown with exactly these sections:
 ## Next Week. Be concrete and quantitative; reference the numbers given. Flag
 interference effects between modes (e.g. heavy aerobic volume blunting sprint
 speed) when the data suggests them. No pleasantries, no generic advice.
+When subjective reports are present, cross-reference them against the objective
+numbers and explain correlations concretely (cite the day and the metric).
 
 End your reply with a fenced ```json block:
 {"headline": str, "wins": [str], "flags": [str], "focus_next_week": [str]}
@@ -84,6 +87,25 @@ def build_week_summary(db: Session, week_start: date, week_end: date) -> dict:
     if paces:
         aerobic["avg_pace_s_per_km"] = round(sum(paces) / len(paces))
 
+    voice_logs = db.scalars(
+        select(VoiceLog).where(VoiceLog.created_at >= start_dt, VoiceLog.created_at < end_dt)
+        .order_by(VoiceLog.created_at)
+    ).all()
+    mode_by_id = {a.id: a.mode.value for a in activities}
+    subjective = []
+    for log in voice_logs:
+        linked_mode = mode_by_id.get(log.activity_id)
+        if linked_mode is None and log.activity_id is not None:
+            linked = db.get(Activity, log.activity_id)
+            linked_mode = linked.mode.value if linked else None
+        subjective.append({
+            "day": log.created_at.date().isoformat(),
+            "perceived_effort": log.perceived_effort,
+            "notes": log.notes,
+            "symptoms": (log.extracted or {}).get("symptoms", []),
+            "linked_mode": linked_mode,
+        })
+
     summaries = db.scalars(
         select(DailySummary).where(DailySummary.day >= week_start, DailySummary.day <= week_end)
     ).all()
@@ -95,6 +117,8 @@ def build_week_summary(db: Session, week_start: date, week_end: date) -> dict:
         "explosive": explosive,
         "aerobic": aerobic,
         "loaded": loaded,
+        "subjective": subjective,
+        "subjective_flags": correlations.subjective_flags(activities, voice_logs),
         "conditions": {
             "avg_sleep_min": round(sum(sleeps) / len(sleeps)) if sleeps else None,
             "avg_mood_valence": round(sum(moods) / len(moods), 2) if moods else None,
@@ -135,6 +159,10 @@ def _fallback_report(summary: dict) -> tuple[str, dict]:
         "## Recovery & Mood",
         f"Avg sleep {summary['conditions']['avg_sleep_min'] or '—'} min, "
         f"avg mood valence {summary['conditions']['avg_mood_valence'] or '—'}.",
+        "",
+        "## Subjective",
+        f"{len(summary.get('subjective', []))} voice log(s), "
+        f"{len(summary.get('subjective_flags', []))} subjective flag(s).",
     ])
     highlights = {
         "headline": f"{a['km']} km aerobic, {int(l['vert_m'])} m vert, "
