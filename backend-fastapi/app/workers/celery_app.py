@@ -5,7 +5,7 @@ from app.config import get_settings
 
 settings = get_settings()
 
-celery_app = Celery("splitrail", broker=settings.redis_url, backend=settings.redis_url)
+celery_app = Celery("crux", broker=settings.redis_url, backend=settings.redis_url)
 celery_app.conf.timezone = "UTC"
 celery_app.conf.beat_schedule = {
     "weekly-report": {

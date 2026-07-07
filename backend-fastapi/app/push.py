@@ -39,7 +39,7 @@ def send_report_notification(db: Session, report: Report) -> int:
             try:
                 messaging.send(messaging.Message(
                     notification=messaging.Notification(
-                        title="SPLITRAIL — WEEKLY REPORT", body=headline),
+                        title="CRUX — WEEKLY REPORT", body=headline),
                     data={"report_id": str(report.id)},
                     token=t.token,
                 ))

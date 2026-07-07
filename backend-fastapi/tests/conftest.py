@@ -8,7 +8,7 @@ test, TestClient fixture.
 """
 import os
 
-os.environ["DATABASE_URL"] = "sqlite:////tmp/splitrail_test.db"
+os.environ["DATABASE_URL"] = "sqlite:////tmp/crux_test.db"
 os.environ["RUN_MIGRATIONS"] = "false"
 os.environ["ANTHROPIC_API_KEY"] = ""
 os.environ["OPENROUTER_API_KEY"] = ""
