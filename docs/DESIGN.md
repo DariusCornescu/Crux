@@ -1,4 +1,4 @@
-# Splitrail — "MEET SHEET" design system
+# Crux — "MEET SHEET" design system
 
 Instrument-panel / timing-system aesthetic: a sprint timing gate crossed with a
 mountaineering altimeter. The three effort modes are three genuinely different

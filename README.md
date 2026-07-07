@@ -1,4 +1,4 @@
-# Splitrail
+# Crux
 
 Personal training analytics for a three-mode athlete: sprint/anaerobic power,
 aerobic endurance, and loaded sustained effort (mountaineering prep). Strava +
@@ -56,7 +56,7 @@ Monorepo layout mirrors [ListManagerApp](https://github.com/DariusCornescu/ListM
 
 ## Enabling FCM (step 7 one-time setup)
 
-1. Create a Firebase project, add Android app `com.darius.splitrail`, download
+1. Create a Firebase project, add Android app `com.darius.crux`, download
    `google-services.json` into `android-native/app/`.
 2. Uncomment the two `google-services` plugin lines (root and app
    `build.gradle.kts`).

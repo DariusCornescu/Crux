@@ -1,11 +1,11 @@
 # Design: Production hosting + OpenRouter LLM provider
 
 Date: 2026-07-05
-Scope: Splitrail backend (`backend-fastapi/`) + Android app (`android-native/`)
+Scope: Crux backend (`backend-fastapi/`) + Android app (`android-native/`)
 
 ## Goal
 
-Two independent-but-related changes to take Splitrail from a laptop demo to a
+Two independent-but-related changes to take Crux from a laptop demo to a
 hosted app:
 
 1. **LLM provider switch** — route Claude calls through OpenRouter (default)

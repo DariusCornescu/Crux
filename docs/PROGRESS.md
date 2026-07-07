@@ -46,7 +46,7 @@ Android pointed at HTTPS placeholder domain (TODO(domain)).
 - Step 7: `device_tokens` table (migration `c2257a2f00bd`), `POST /devices`
   (idempotent), `app/push.py` (firebase-admin, best-effort — never breaks
   report generation), wired into the Monday report task. Android:
-  SplitrailMessagingService + PushRegistrar (guarded no-ops until
+  CruxMessagingService + PushRegistrar (guarded no-ops until
   google-services.json is added; setup steps in README), POST_NOTIFICATIONS
   permission, firebase-messaging dependency (plugin lines commented).
 - Polish: MarkdownLite moved to ui/components (shared by Reports + Chat);
@@ -81,7 +81,7 @@ Android pointed at HTTPS placeholder domain (TODO(domain)).
   manual `POST /reports/generate`.
 - Dashboard payload gained `mood_trend` (14 days).
 - Android rebuilt in ListManagerApp package structure: `network/`
-  (DTOs/SplitrailApi/RetrofitClient/ApiConfig), `data/model` +
+  (DTOs/CruxApi/RetrofitClient/ApiConfig), `data/model` +
   `data/repository` (RepoResult adapted), `ui/viewmodel` (UiState +
   StateFlow), `ui/navigation/NavGraph`, screens: Dashboard (live API,
   loading/error strips, MoodTrace), Reports list + detail (MarkdownLite
