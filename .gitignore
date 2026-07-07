@@ -12,3 +12,4 @@ secrets/
 .idea/
 backend-fastapi/tests/test.db
 *.db
+.worktrees/
