@@ -27,7 +27,7 @@ BACK_TO_BACK_GAP_MIN = 5
 AFTER_HOURS_START = 19  # local hour
 
 # Dedup aid, not a secret — documented in the spec.
-_SUBJECT_SALT = b"splitrail-calendar-v1:"
+_SUBJECT_SALT = b"crux-calendar-v1:"
 
 
 def _hash_subject(subject: str) -> str:

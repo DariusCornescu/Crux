@@ -22,7 +22,7 @@ from app.models import (Activity, CalendarEvent, DailySummary, EffortMode, Repor
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = """You are the analysis engine of Splitrail, a personal training
+SYSTEM_PROMPT = """You are the analysis engine of Crux, a personal training
 analytics app for one athlete: a former national 60m champion (PB 6.91) rebuilding
 an aerobic base and preparing for mountaineering. His training has three distinct
 physiological modes and your report must treat them as such:

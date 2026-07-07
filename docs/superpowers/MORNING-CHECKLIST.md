@@ -17,7 +17,7 @@ the one deferred gate. If `!reset` errors (Compose < v2.24), see the note in
 1. Create the DigitalOcean Droplet (Ubuntu LTS, 1 GB+, your SSH key).
 2. Point your domain's `A` record at the Droplet IP; wait for DNS.
 3. `ssh root@<ip>` → `curl -fsSL https://get.docker.com | sh`
-4. From `PersonalApp/`: `scp -r backend-fastapi root@<ip>:/srv/splitrail`
+4. From `PersonalApp/`: `scp -r backend-fastapi root@<ip>:/srv/crux`
 5. On the Droplet: create `.env` from `.env.example` — set `OPENROUTER_API_KEY`
    (get one at https://openrouter.ai/keys), a strong `POSTGRES_PASSWORD`,
    Strava/Spotify credentials, FCM path if using push.

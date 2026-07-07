@@ -29,7 +29,7 @@ All backend paths are relative to `backend-fastapi/`. Run tests from `backend-fa
 - Create: `backend-fastapi/Caddyfile` — reverse proxy + TLS
 - Create: `backend-fastapi/docker-compose.prod.yml` — prod overlay (Caddy)
 - Create: `backend-fastapi/docs/DEPLOY.md` — runbook
-- Modify: `android-native/app/src/main/java/com/darius/splitrail/network/ApiConfig.kt`
+- Modify: `android-native/app/src/main/java/com/darius/crux/network/ApiConfig.kt`
 - Modify: `android-native/app/src/main/AndroidManifest.xml` — drop cleartext
 
 ---
@@ -477,7 +477,7 @@ replace `ports: !reset []` with an override that maps to loopback only:
 Create `backend-fastapi/docs/DEPLOY.md`:
 
 ```markdown
-# Deploying Splitrail to a DigitalOcean Droplet
+# Deploying Crux to a DigitalOcean Droplet
 
 The backend is Dockerized. Production runs the same compose stack plus a Caddy
 reverse proxy that terminates HTTPS with an automatic Let's Encrypt certificate.
@@ -506,11 +506,11 @@ This installs Docker Engine + the Compose plugin.
 ## 4. Copy the backend to the Droplet
 From your PC, in `PersonalApp/`:
 ```
-scp -r backend-fastapi root@<droplet IP>:/srv/splitrail
+scp -r backend-fastapi root@<droplet IP>:/srv/crux
 ```
 
 ## 5. Create secrets on the Droplet
-On the Droplet, in `/srv/splitrail`:
+On the Droplet, in `/srv/crux`:
 - Create `.env` (copy from `.env.example`) and fill in real values:
   - `OPENROUTER_API_KEY=<your key>`
   - `POSTGRES_PASSWORD=<a strong password>`
@@ -553,7 +553,7 @@ Re-`scp` the changed files and run the compose up command again.
 ## Task 8: Point the Android app at HTTPS
 
 **Files:**
-- Modify: `android-native/app/src/main/java/com/darius/splitrail/network/ApiConfig.kt`
+- Modify: `android-native/app/src/main/java/com/darius/crux/network/ApiConfig.kt`
 - Modify: `android-native/app/src/main/AndroidManifest.xml`
 
 > Do this task only after the backend is deployed and reachable at the domain.

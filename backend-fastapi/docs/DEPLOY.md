@@ -1,4 +1,4 @@
-# Deploying Splitrail to a DigitalOcean Droplet
+# Deploying Crux to a DigitalOcean Droplet
 
 The backend is Dockerized. Production runs the same compose stack plus a Caddy
 reverse proxy that terminates HTTPS with an automatic Let's Encrypt certificate.
@@ -27,11 +27,11 @@ This installs Docker Engine + the Compose plugin.
 ## 4. Copy the backend to the Droplet
 From your PC, in `PersonalApp/`:
 ```
-scp -r backend-fastapi root@<droplet IP>:/srv/splitrail
+scp -r backend-fastapi root@<droplet IP>:/srv/crux
 ```
 
 ## 5. Create secrets on the Droplet
-On the Droplet, in `/srv/splitrail`:
+On the Droplet, in `/srv/crux`:
 - Create `.env` (copy from `.env.example`) and fill in real values:
   - `OPENROUTER_API_KEY=<your key>`
   - `POSTGRES_PASSWORD=<a strong password>`

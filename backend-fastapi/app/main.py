@@ -26,7 +26,7 @@ def _run_migrations_to_head() -> None:
 if os.getenv("RUN_MIGRATIONS", "true").lower() != "false":
     _run_migrations_to_head()
 
-app = FastAPI(title="Splitrail API", version="0.2.0")
+app = FastAPI(title="Crux API", version="0.2.0")
 
 app.include_router(health.router)
 app.include_router(dashboard.router)

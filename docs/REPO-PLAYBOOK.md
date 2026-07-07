@@ -7,9 +7,9 @@ next. **Merge with "Create a merge commit" (or "Rebase and merge") — NOT
 
 ## 0. One-time
 ```bash
-# Create an empty repo on GitHub (e.g. DariusCornescu/Splitrail) — no README.
+# Create an empty repo on GitHub (e.g. DariusCornescu/Crux) — no README.
 cd PersonalApp
-git remote add origin git@github.com:DariusCornescu/Splitrail.git
+git remote add origin git@github.com:DariusCornescu/Crux.git
 ```
 
 ## 1. Push the vision (this is your "first batch")

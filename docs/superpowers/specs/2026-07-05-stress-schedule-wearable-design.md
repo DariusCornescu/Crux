@@ -54,7 +54,7 @@ No device owned yet (recommendation below). The design assumes devices change:
   `(source, kind, recorded_at)`) — anything that can POST JSON can feed it.
 - **Adapter A (first): Android Health Connect.** Nearly every vendor (Garmin,
   Samsung, Fitbit, Polar, Xiaomi, Whoop) writes into Health Connect; the
-  Splitrail app reads new samples and pushes batches. One integration, any
+  Crux app reads new samples and pushes batches. One integration, any
   device. Limitation: sync happens when the phone app runs (WorkManager
   periodic job).
 - **Adapter B (optional, device-dependent): vendor cloud polling** — only if
@@ -67,7 +67,7 @@ No device owned yet (recommendation below). The design assumes devices change:
 
 ### Device recommendation (asked for)
 
-For Splitrail's needs — sleep, HRV/stress, recovery; activities already come
+For Crux's needs — sleep, HRV/stress, recovery; activities already come
 from Strava — data quality and API access matter more than wrist GPS:
 
 - **Best fit: Oura ring.** Best-in-class sleep/HRV/readiness + daytime stress,

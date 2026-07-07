@@ -1,4 +1,4 @@
-# Splitrail — Overnight Autonomous Build Handoff (for Fable)
+# Crux — Overnight Autonomous Build Handoff (for Fable)
 
 > **You are an autonomous agent (Fable 5) running this UNATTENDED overnight. No human
 > will answer questions until morning.** This document is your complete brief. Read the

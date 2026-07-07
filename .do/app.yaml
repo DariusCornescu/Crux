@@ -7,13 +7,13 @@
 # trigger syncs and reports via their POST endpoints, or add worker components
 # + a managed Redis later (see backend-fastapi/docs/DEPLOY.md for the Droplet
 # alternative that runs the full stack).
-name: splitrail
+name: crux
 region: fra
 services:
   - name: api
     github:
-      # TODO(repo): set to your GitHub repo once created, e.g. DariusCornescu/Splitrail
-      repo: DariusCornescu/Splitrail
+      # TODO(repo): set to your GitHub repo once created, e.g. DariusCornescu/Crux
+      repo: DariusCornescu/Crux
       branch: main
       deploy_on_push: true
     source_dir: backend-fastapi

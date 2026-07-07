@@ -1,4 +1,4 @@
-# Splitrail — Feature Backlog
+# Crux — Feature Backlog
 
 Additions folded into the existing build order (see root `README.md` → Build order).
 Each feature below is its own future spec → plan → implementation cycle; this doc is

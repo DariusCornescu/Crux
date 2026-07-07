@@ -75,7 +75,7 @@ def strava_callback(code: str = "", error: str = "", db: Session = Depends(get_d
         strava.sync_activities(db)
     except Exception:  # initial sync is best effort; the beat schedule retries
         pass
-    return _CALLBACK_HTML.format(title="STRAVA CONNECTED", note="return to Splitrail")
+    return _CALLBACK_HTML.format(title="STRAVA CONNECTED", note="return to Crux")
 
 
 @router.post("/strava/sync", response_model=SyncResult)
@@ -109,7 +109,7 @@ def spotify_callback(code: str = "", error: str = "", db: Session = Depends(get_
         spotify.sync_recently_played(db)
     except Exception:
         pass
-    return _CALLBACK_HTML.format(title="SPOTIFY CONNECTED", note="return to Splitrail")
+    return _CALLBACK_HTML.format(title="SPOTIFY CONNECTED", note="return to Crux")
 
 
 @router.post("/spotify/sync", response_model=SyncResult)
