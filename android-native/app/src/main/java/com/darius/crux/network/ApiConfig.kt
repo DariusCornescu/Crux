@@ -7,5 +7,5 @@ object ApiConfig {
     // Production backend behind HTTPS.
     // Local dev alternatives: emulator "http://10.0.2.2:8000/",
     // LAN device "http://<pc-lan-ip>:8000/".
-    const val BASE_URL = "https://your-domain.example/"
+    const val BASE_URL = "https://api.crux.com.im/"
 }
