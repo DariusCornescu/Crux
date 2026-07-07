@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.darius.splitrail"
+    namespace = "com.darius.crux"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.darius.splitrail"
+        applicationId = "com.darius.crux"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

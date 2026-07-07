@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Splitrail"
+rootProject.name = "Crux"
 include(":app")
