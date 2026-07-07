@@ -1,0 +1,156 @@
+package com.darius.splitrail.ui.screens
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.darius.splitrail.data.model.ChatMessage
+import com.darius.splitrail.ui.components.ErrorStrip
+import com.darius.splitrail.ui.components.HairlineRule
+import com.darius.splitrail.ui.components.InstrumentLabel
+import com.darius.splitrail.ui.components.LoadingStrip
+import com.darius.splitrail.ui.components.MarkdownLite
+import com.darius.splitrail.ui.theme.GateRed
+import com.darius.splitrail.ui.theme.Graphite
+import com.darius.splitrail.ui.theme.Steel
+import com.darius.splitrail.ui.viewmodel.ChatViewModel
+
+@Composable
+fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
+    val uiState by viewModel.uiState.collectAsState()
+    val listState = rememberLazyListState()
+    var input by remember { mutableStateOf("") }
+
+    LaunchedEffect(uiState.messages.size) {
+        if (uiState.messages.isNotEmpty()) {
+            listState.animateScrollToItem(uiState.messages.size - 1)
+        }
+    }
+
+    Column(Modifier.fillMaxSize().imePadding().padding(top = 18.dp)) {
+        Column(Modifier.padding(horizontal = 20.dp)) {
+            InstrumentLabel("CHAT", "ASK YOUR DATA", Steel)
+        }
+        Spacer(Modifier.height(10.dp))
+        HairlineRule()
+
+        when {
+            uiState.isLoading -> LoadingStrip()
+            uiState.error != null && uiState.messages.isEmpty() ->
+                ErrorStrip(uiState.error ?: "NO SIGNAL", onRetry = viewModel::loadHistory)
+            uiState.messages.isEmpty() -> Text(
+                "Ask anything about your training, sleep or mood — " +
+                    "answers come from your own data.",
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(20.dp).weight(1f),
+            )
+            else -> LazyColumn(state = listState, modifier = Modifier.weight(1f)) {
+                items(uiState.messages, key = { it.id }) { message ->
+                    MessageRow(message)
+                    HairlineRule()
+                }
+            }
+        }
+
+        // Inline error while history is still shown
+        if (uiState.error != null && uiState.messages.isNotEmpty()) {
+            Text(
+                uiState.error ?: "",
+                style = MaterialTheme.typography.labelSmall.copy(color = GateRed),
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
+            )
+        }
+
+        InputBar(
+            value = input,
+            enabled = !uiState.isSending,
+            onValueChange = { input = it },
+            onSend = {
+                viewModel.send(input)
+                input = ""
+            },
+        )
+    }
+}
+
+/** Messages as timing-sheet entries — mono role tag, hairline separation. No bubbles. */
+@Composable
+private fun MessageRow(message: ChatMessage) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
+        Text(
+            if (message.role == "user") "YOU" else "SPLITRAIL",
+            style = MaterialTheme.typography.labelSmall.copy(
+                color = if (message.role == "user") Graphite else Steel),
+        )
+        Spacer(Modifier.height(4.dp))
+        if (message.role == "assistant") {
+            MarkdownLite(message.content)
+        } else {
+            Text(message.content, style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+@Composable
+private fun InputBar(
+    value: String,
+    enabled: Boolean,
+    onValueChange: (String) -> Unit,
+    onSend: () -> Unit,
+) {
+    Column {
+        HairlineRule()
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                textStyle = MaterialTheme.typography.bodyMedium,
+                cursorBrush = SolidColor(GateRed),
+                modifier = Modifier.weight(1f),
+                decorationBox = { innerTextField ->
+                    if (value.isEmpty()) {
+                        Text(
+                            "ASK YOUR DATA…",
+                            style = MaterialTheme.typography.labelSmall.copy(color = Graphite),
+                        )
+                    }
+                    innerTextField()
+                },
+            )
+            Spacer(Modifier.width(16.dp))
+            Text(
+                if (enabled) "SEND" else "…",
+                style = MaterialTheme.typography.titleSmall.copy(
+                    color = if (enabled && value.isNotBlank()) GateRed else Graphite),
+                modifier = Modifier.clickable(enabled = enabled && value.isNotBlank(), onClick = onSend),
+            )
+        }
+    }
+}

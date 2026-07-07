@@ -1,0 +1,39 @@
+# DigitalOcean App Platform spec — connect the GitHub repo and every merge to
+# main auto-deploys. Import via: doctl apps create --spec .do/app.yaml
+# (or paste in the App Platform UI: Create App -> Import from spec).
+#
+# Scope note: this runs the API + a managed dev Postgres. Celery worker/beat
+# (scheduled Strava/Spotify sync + Monday reports) are NOT deployed here yet —
+# trigger syncs and reports via their POST endpoints, or add worker components
+# + a managed Redis later (see backend-fastapi/docs/DEPLOY.md for the Droplet
+# alternative that runs the full stack).
+name: splitrail
+region: fra
+services:
+  - name: api
+    github:
+      # TODO(repo): set to your GitHub repo once created, e.g. DariusCornescu/Splitrail
+      repo: DariusCornescu/Splitrail
+      branch: main
+      deploy_on_push: true
+    source_dir: backend-fastapi
+    dockerfile_path: backend-fastapi/Dockerfile
+    http_port: 8000
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    health_check:
+      http_path: /healthz
+    envs:
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${db.DATABASE_URL}
+      - key: RUN_MIGRATIONS
+        scope: RUN_TIME
+        value: "true"
+      # Set these as encrypted app-level env vars in the DO UI (do not commit):
+      # LLM_PROVIDER, OPENROUTER_API_KEY, OPENROUTER_MODEL,
+      # STRAVA_CLIENT_ID/SECRET/REDIRECT_URI, SPOTIFY_CLIENT_ID/SECRET/REDIRECT_URI
+databases:
+  - name: db
+    engine: PG
+    production: false
