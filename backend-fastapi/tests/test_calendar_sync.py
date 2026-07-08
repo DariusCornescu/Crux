@@ -55,8 +55,9 @@ END:VCALENDAR
 WINDOW_START = datetime(2026, 6, 21, tzinfo=timezone.utc)
 WINDOW_END = datetime(2026, 7, 12, tzinfo=timezone.utc)
 
-_FUTURE_START = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y%m%dT090000Z")
-_FUTURE_END = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y%m%dT100000Z")
+_now = datetime.now(timezone.utc)
+_FUTURE_START = (_now + timedelta(days=1)).strftime("%Y%m%dT090000Z")
+_FUTURE_END = (_now + timedelta(days=1)).strftime("%Y%m%dT100000Z")
 
 ICS_FUTURE = ICS.replace(
     "END:VCALENDAR",
@@ -93,7 +94,7 @@ def test_parse_expands_rrule_and_skips_all_day():
     assert events[0]["attendee_count"] == 2
 
 
-def test_sync_idempotent_and_no_raw_subjects(db, monkeypatch, configured):
+def test_sync_idempotent_and_subject_hash_is_opaque(db, monkeypatch, configured):
     monkeypatch.setattr(calendar_sync.httpx, "get", lambda *a, **k: FakeResponse(text=ICS))
     monkeypatch.setattr(calendar_sync, "_window", lambda: (WINDOW_START, WINDOW_END))
 

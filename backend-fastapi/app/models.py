@@ -190,3 +190,12 @@ class CalendarEvent(Base):
     subject_hash: Mapped[str] = mapped_column(String(64))
     subject: Mapped[str | None] = mapped_column(String(256), nullable=True)
     source: Mapped[str] = mapped_column(String(16), default="ics")
+
+
+class DailyQuote(Base):
+    __tablename__ = "daily_quotes"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    day: Mapped[date] = mapped_column(Date, unique=True, index=True)
+    text: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(String(8), default="static")  # llm | static
