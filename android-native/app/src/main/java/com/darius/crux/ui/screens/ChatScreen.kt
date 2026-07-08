@@ -1,6 +1,7 @@
 package com.darius.crux.ui.screens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -38,6 +39,7 @@ import com.darius.crux.ui.theme.GateRed
 import com.darius.crux.ui.theme.Graphite
 import com.darius.crux.ui.theme.Steel
 import com.darius.crux.ui.viewmodel.ChatViewModel
+import kotlinx.coroutines.delay
 
 @Composable
 fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
@@ -52,8 +54,15 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     }
 
     Column(Modifier.fillMaxSize().imePadding().padding(top = 18.dp)) {
-        Column(Modifier.padding(horizontal = 20.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             InstrumentLabel("CHAT", "ASK YOUR DATA", Steel)
+            if (uiState.messages.isNotEmpty()) {
+                ClearHistoryAction(onConfirm = viewModel::clearHistory)
+            }
         }
         Spacer(Modifier.height(10.dp))
         HairlineRule()
@@ -95,6 +104,33 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
             },
         )
     }
+}
+
+/** Engraved CLEAR action — tap once to arm (SURE?, GateRed), tap again to confirm.
+ *  Arms for 3s only; untouched, it quietly steps back down to CLEAR. */
+@Composable
+private fun ClearHistoryAction(onConfirm: () -> Unit) {
+    var confirming by remember { mutableStateOf(false) }
+
+    LaunchedEffect(confirming) {
+        if (confirming) {
+            delay(3000)
+            confirming = false
+        }
+    }
+
+    Text(
+        if (confirming) "SURE?" else "CLEAR",
+        style = MaterialTheme.typography.labelSmall.copy(color = if (confirming) GateRed else Graphite),
+        modifier = Modifier.clickable {
+            if (confirming) {
+                confirming = false
+                onConfirm()
+            } else {
+                confirming = true
+            }
+        },
+    )
 }
 
 /** Messages as timing-sheet entries — mono role tag, hairline separation. No bubbles. */

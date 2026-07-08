@@ -44,22 +44,62 @@ class ChatViewModel : ViewModel() {
         val trimmed = text.trim()
         if (trimmed.isEmpty() || _uiState.value.isSending) return
 
-        // Optimistic user turn
+        // Optimistic user turn + an empty assistant row that fills in token-by-token.
         val optimistic = ChatMessage(id = localId--, role = "user", content = trimmed, createdAt = "")
+        val assistantId = localId--
+        val placeholder = ChatMessage(id = assistantId, role = "assistant", content = "", createdAt = "")
         _uiState.value = _uiState.value.copy(
-            messages = _uiState.value.messages + optimistic,
+            messages = _uiState.value.messages + optimistic + placeholder,
             isSending = true, error = null,
         )
 
         viewModelScope.launch {
-            when (val result = repository.send(trimmed)) {
-                is RepoResult.Success -> _uiState.value = _uiState.value.copy(
-                    messages = _uiState.value.messages +
-                        ChatMessage(id = localId--, role = "assistant", content = result.data, createdAt = ""),
-                    isSending = false,
-                )
-                is RepoResult.Error -> _uiState.value =
-                    _uiState.value.copy(isSending = false, error = result.message)
+            var receivedAny = false
+            try {
+                repository.streamMessage(trimmed).collect { token ->
+                    receivedAny = true
+                    updateAssistantMessage(assistantId) { it.copy(content = it.content + token) }
+                }
+                _uiState.value = _uiState.value.copy(isSending = false)
+            } catch (e: Exception) {
+                if (receivedAny) {
+                    // Partial reply already on screen — mark it broken off, don't re-send.
+                    updateAssistantMessage(assistantId) { it.copy(content = it.content + " — SIGNAL LOST") }
+                    _uiState.value = _uiState.value.copy(isSending = false)
+                } else {
+                    // Streaming never got off the ground — fall back to the plain endpoint.
+                    fallbackSend(trimmed, assistantId)
+                }
+            }
+        }
+    }
+
+    private suspend fun fallbackSend(trimmed: String, assistantId: Long) {
+        when (val result = repository.send(trimmed)) {
+            is RepoResult.Success -> {
+                updateAssistantMessage(assistantId) { it.copy(content = result.data) }
+                _uiState.value = _uiState.value.copy(isSending = false)
+            }
+            is RepoResult.Error -> _uiState.value = _uiState.value.copy(
+                messages = _uiState.value.messages.filterNot { it.id == assistantId },
+                isSending = false,
+                error = result.message,
+            )
+        }
+    }
+
+    private fun updateAssistantMessage(id: Long, transform: (ChatMessage) -> ChatMessage) {
+        _uiState.value = _uiState.value.copy(
+            messages = _uiState.value.messages.map { if (it.id == id) transform(it) else it },
+        )
+    }
+
+    fun clearHistory() {
+        viewModelScope.launch {
+            when (val result = repository.clearHistory()) {
+                is RepoResult.Success -> _uiState.value =
+                    _uiState.value.copy(messages = emptyList(), error = null)
+                is RepoResult.Error -> _uiState.value = _uiState.value.copy(error = result.message)
             }
         }
     }
