@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from app import spotify
 from app.models import DailySummary, ListeningSession
@@ -109,10 +109,11 @@ def test_sync_stores_spotify_track_id(db, monkeypatch):
 
 
 def test_backfill_populates_missing_features(db, monkeypatch):
+    # Inside the 14-day mood window; mid-day so base+1h stays on the same day.
+    base = (datetime.now(timezone.utc) - timedelta(days=2)).replace(hour=10, minute=0)
     db.add_all([
-        ListeningSession(played_at=datetime(2026, 7, 1, 10, tzinfo=timezone.utc),
-                         track_name="Song A", spotify_track_id="trk1"),
-        ListeningSession(played_at=datetime(2026, 7, 1, 11, tzinfo=timezone.utc),
+        ListeningSession(played_at=base, track_name="Song A", spotify_track_id="trk1"),
+        ListeningSession(played_at=base + timedelta(hours=1),
                          track_name="Song B", spotify_track_id="trk2"),
     ])
     db.commit()
