@@ -166,12 +166,14 @@ def stream_message(db: Session, message: str):
         db.commit()
         persisted_user = True
         context = build_context(db)
+        # Read the ORM rows BEFORE the rollback: rollback expires them, and a
+        # later attribute access would refresh + autobegin a new transaction.
+        msgs = [{"role": "user" if m.role == "user" else "assistant", "content": m.content}
+                for m in history] + [{"role": "user", "content": message}]
         # release the connection during the (long) LLM wait — no idle-in-transaction
         db.rollback()
 
         if llm.is_configured():
-            msgs = [{"role": "user" if m.role == "user" else "assistant", "content": m.content}
-                    for m in history] + [{"role": "user", "content": message}]
             try:
                 for token in llm.stream(system=SYSTEM_PROMPT + json.dumps(context),
                                         messages=msgs, max_tokens=1000):
