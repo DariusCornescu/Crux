@@ -138,3 +138,31 @@ def test_fetch_audio_features_survives_null_content(monkeypatch):
     monkeypatch.setattr(spotify.httpx, "get",
                         lambda *a, **k: FakeResponse({"content": None}))
     assert spotify._fetch_audio_features(["t1"]) == {}
+
+
+def test_sync_adopts_track_id_on_existing_rows(db, monkeypatch):
+    """Rows synced before the spotify_track_id column existed must adopt the id
+    when the same play shows up again in recently-played."""
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT10:00:00Z")
+    played_at = datetime.fromisoformat(now_iso.replace("Z", "+00:00"))
+    db.add(ListeningSession(played_at=played_at, track_name="Song A"))  # legacy row, no id
+    db.commit()
+
+    monkeypatch.setattr(spotify.httpx, "post", lambda *a, **k: FakeResponse(TOKEN_PAYLOAD))
+
+    def fake_get(url, **kwargs):
+        if "recently-played" in url:
+            return FakeResponse({"items": [
+                {"played_at": now_iso,
+                 "track": {"id": "trk1", "name": "Song A", "artists": [{"name": "Artist A"}]}},
+            ]})
+        return FakeResponse({"content": []})
+
+    monkeypatch.setattr(spotify.httpx, "get", fake_get)
+
+    spotify.exchange_code(db, "authcode")
+    assert spotify.sync_recently_played(db) == 0  # no NEW rows
+
+    rows = db.query(ListeningSession).all()
+    assert len(rows) == 1                          # no duplicate created
+    assert rows[0].spotify_track_id == "trk1"      # id adopted
