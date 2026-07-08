@@ -190,7 +190,7 @@ def backfill_audio_features(db: Session) -> int:
     ).all()
     if not rows:
         return 0
-    features = _fetch_audio_features([r.spotify_track_id for r in rows])
+    features = _fetch_audio_features(list(dict.fromkeys(r.spotify_track_id for r in rows)))
     updated = 0
     for r in rows:
         f = features.get(r.spotify_track_id)
@@ -200,5 +200,8 @@ def backfill_audio_features(db: Session) -> int:
             r.tempo = f.get("tempo")
             updated += 1
     db.commit()
-    aggregate_daily_mood(db)
+    # Widen the roll-up window to cover the oldest backfilled row — the default
+    # 14 days would silently skip older tracks.
+    oldest = min(r.played_at for r in rows).date()
+    aggregate_daily_mood(db, days=max(14, (date.today() - oldest).days + 1))
     return updated

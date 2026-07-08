@@ -127,6 +127,7 @@ def test_backfill_populates_missing_features(db, monkeypatch):
     monkeypatch.setattr(spotify.httpx, "get", fake_get)
 
     assert spotify.backfill_audio_features(db) == 2
+    assert spotify.backfill_audio_features(db) == 0  # idempotent
     rows = {r.track_name: r for r in db.query(ListeningSession).all()}
     assert abs(rows["Song A"].valence - 0.8) < 1e-6
     summary = db.query(DailySummary).one()

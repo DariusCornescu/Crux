@@ -25,7 +25,7 @@
 - Modify: `backend-fastapi/app/spotify.py:22` (drop `FEATURES_URL`), `:79-94` (`_fetch_audio_features`), `:123` (caller)
 - Test: `backend-fastapi/tests/test_spotify.py` (update `test_sync_with_features_and_mood_aggregation`)
 
-- [ ] **Step 1: Update the failing test to the ReccoBeats shape**
+- [x] **Step 1: Update the failing test to the ReccoBeats shape**
 
 In `tests/test_spotify.py`, replace the body of `test_sync_with_features_and_mood_aggregation` so the features mock returns ReccoBeats' `content[]` with `href`:
 
@@ -55,12 +55,12 @@ def test_sync_with_features_and_mood_aggregation(db, monkeypatch):
 
 (`test_sync_with_features_unavailable` needs no change — its `fake_get` returns 403 for the non-recently-played URL, which is now the ReccoBeats call; valence stays `None`.)
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `python -m pytest tests/test_spotify.py::test_sync_with_features_and_mood_aggregation -v`
 Expected: FAIL — current code posts the Spotify `audio-features` shape / passes `access_token`, so `content` is never parsed and `mood_valence` is `None`.
 
-- [ ] **Step 3: Add the config setting**
+- [x] **Step 3: Add the config setting**
 
 In `app/config.py`, inside `class Settings`, add (after the spotify_* block):
 
@@ -68,7 +68,7 @@ In `app/config.py`, inside `class Settings`, add (after the spotify_* block):
     reccobeats_base_url: str = "https://api.reccobeats.com"
 ```
 
-- [ ] **Step 4: Rewrite `_fetch_audio_features` to call ReccoBeats**
+- [x] **Step 4: Rewrite `_fetch_audio_features` to call ReccoBeats**
 
 In `app/spotify.py`: add `import time` at the top with the other stdlib imports; delete the `FEATURES_URL = "https://api.spotify.com/v1/audio-features"` constant (line 22); add module constants near the other URLs:
 
@@ -112,7 +112,7 @@ def _fetch_audio_features(track_ids: list[str]) -> dict[str, dict]:
     return out
 ```
 
-- [ ] **Step 5: Update the caller (drop `access_token`)**
+- [x] **Step 5: Update the caller (drop `access_token`)**
 
 In `app/spotify.py::sync_recently_played`, change the features line (was line 123):
 
@@ -120,12 +120,12 @@ In `app/spotify.py::sync_recently_played`, change the features line (was line 12
     features = _fetch_audio_features([tid for _, tid in new_rows if tid])
 ```
 
-- [ ] **Step 6: Run tests to verify pass**
+- [x] **Step 6: Run tests to verify pass**
 
 Run: `python -m pytest tests/test_spotify.py -v`
 Expected: PASS (both `test_sync_with_features_and_mood_aggregation` and `test_sync_with_features_unavailable`).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add app/config.py app/spotify.py tests/test_spotify.py
@@ -142,7 +142,7 @@ git commit -m "feat: source audio features from ReccoBeats (Spotify audio-featur
 - Modify: `backend-fastapi/app/spotify.py` (`sync_recently_played` row construction)
 - Test: `backend-fastapi/tests/test_spotify.py` (new test)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/test_spotify.py`:
 
@@ -165,12 +165,12 @@ def test_sync_stores_spotify_track_id(db, monkeypatch):
     assert ids == {"Song A": "trk1", "Song B": "trk2"}
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `python -m pytest tests/test_spotify.py::test_sync_stores_spotify_track_id -v`
 Expected: FAIL — `ListeningSession` has no `spotify_track_id` attribute yet.
 
-- [ ] **Step 3: Add the column to the model**
+- [x] **Step 3: Add the column to the model**
 
 In `app/models.py::ListeningSession` (after the `artist` column):
 
@@ -178,7 +178,7 @@ In `app/models.py::ListeningSession` (after the `artist` column):
     spotify_track_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
 ```
 
-- [ ] **Step 4: Set it during sync**
+- [x] **Step 4: Set it during sync**
 
 In `app/spotify.py::sync_recently_played`, add `spotify_track_id` to the `ListeningSession(...)` constructor:
 
@@ -191,7 +191,7 @@ In `app/spotify.py::sync_recently_played`, add `spotify_track_id` to the `Listen
         )
 ```
 
-- [ ] **Step 5: Create the migration**
+- [x] **Step 5: Create the migration**
 
 Run: `python -m alembic revision -m "listening spotify_track_id"` (this creates a file with the correct `down_revision` already linked to the current head). In the generated file, fill the bodies:
 
@@ -211,12 +211,12 @@ def downgrade() -> None:
 
 (Ensure `import sqlalchemy as sa` is present in the generated file — Alembic adds it by default.)
 
-- [ ] **Step 6: Run the new test AND the migration drift-guard**
+- [x] **Step 6: Run the new test AND the migration drift-guard**
 
 Run: `python -m pytest tests/test_spotify.py::test_sync_stores_spotify_track_id tests/test_migrations.py -v`
 Expected: PASS. The drift-guard (`test_migrations.py`) confirms the model column + index match the migration (no autogenerate diff). If it reports a diff, the index name in the migration must exactly equal `ix_listening_sessions_spotify_track_id`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add app/models.py app/spotify.py alembic/versions/
@@ -231,7 +231,7 @@ git commit -m "feat: persist spotify_track_id on ListeningSession (+ migration)"
 - Modify: `backend-fastapi/app/chat_service.py::build_context` (lines 72-98 dict)
 - Test: `backend-fastapi/tests/test_chat.py` (new test)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/test_chat.py`:
 
@@ -254,12 +254,12 @@ def test_recent_listening_in_context(db):
     assert first["valence"] == 0.8
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `python -m pytest tests/test_chat.py::test_recent_listening_in_context -v`
 Expected: FAIL — `KeyError: 'recent_listening'`.
 
-- [ ] **Step 3: Add `recent_listening` to the snapshot**
+- [x] **Step 3: Add `recent_listening` to the snapshot**
 
 In `app/chat_service.py::build_context`, after the existing `listening = db.scalars(...)` block, add:
 
@@ -281,12 +281,12 @@ Then add this key to the returned dict (e.g. right after `"audio_priming": ...`)
 
 (`ListeningSession` and `select` are already imported in `chat_service.py`.)
 
-- [ ] **Step 4: Run tests to verify pass**
+- [x] **Step 4: Run tests to verify pass**
 
 Run: `python -m pytest tests/test_chat.py -v`
 Expected: PASS (all chat tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add app/chat_service.py tests/test_chat.py
@@ -302,7 +302,7 @@ git commit -m "feat: include recent listening (tracks/artists) in chat context"
 - Modify: `backend-fastapi/app/routers/integrations.py` (add `POST /spotify/backfill`)
 - Test: `backend-fastapi/tests/test_spotify.py` (new test)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Append to `tests/test_spotify.py`:
 
@@ -331,12 +331,12 @@ def test_backfill_populates_missing_features(db, monkeypatch):
     assert summary.mood_valence is not None
 ```
 
-- [ ] **Step 2: Run it and watch it fail**
+- [x] **Step 2: Run it and watch it fail**
 
 Run: `python -m pytest tests/test_spotify.py::test_backfill_populates_missing_features -v`
 Expected: FAIL — `spotify.backfill_audio_features` does not exist.
 
-- [ ] **Step 3: Implement `backfill_audio_features`**
+- [x] **Step 3: Implement `backfill_audio_features`**
 
 Add to `app/spotify.py` (after `aggregate_daily_mood`):
 
@@ -366,7 +366,7 @@ def backfill_audio_features(db: Session) -> int:
     return updated
 ```
 
-- [ ] **Step 4: Add the endpoint**
+- [x] **Step 4: Add the endpoint**
 
 In `app/routers/integrations.py`, in the Spotify section (after `spotify_sync`):
 
@@ -378,12 +378,12 @@ def spotify_backfill(db: Session = Depends(get_db)):
 
 (`spotify`, `SyncResult`, `get_db`, `Depends`, `Session` are already imported.)
 
-- [ ] **Step 5: Run tests to verify pass**
+- [x] **Step 5: Run tests to verify pass**
 
 Run: `python -m pytest tests/test_spotify.py::test_backfill_populates_missing_features -v`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add app/spotify.py app/routers/integrations.py tests/test_spotify.py
@@ -394,7 +394,7 @@ git commit -m "feat: POST /integrations/spotify/backfill to fill mood on existin
 
 ### Task 5: Full suite + rollout
 
-- [ ] **Step 1: Run the whole suite**
+- [x] **Step 1: Run the whole suite**
 
 Run: `python -m pytest -q`
 Expected: all tests PASS (the prior 75 + the new spotify/chat tests).
