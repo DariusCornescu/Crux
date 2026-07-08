@@ -32,6 +32,7 @@ import com.darius.crux.ui.screens.DashboardScreen
 import com.darius.crux.ui.screens.ReportDetailScreen
 import com.darius.crux.ui.screens.ReportsScreen
 import com.darius.crux.ui.screens.SettingsScreen
+import com.darius.crux.ui.screens.SignalsScreen
 import com.darius.crux.ui.theme.GateRed
 import com.darius.crux.ui.theme.Graphite
 import com.darius.crux.ui.theme.Ink
@@ -57,7 +58,9 @@ fun NavGraph() {
             startDestination = "dashboard",
             modifier = Modifier.padding(padding),
         ) {
-            composable("dashboard") { DashboardScreen() }
+            composable("dashboard") {
+                DashboardScreen(onOpenSignals = { nav.navigate("signals") })
+            }
             composable("chat") { ChatScreen() }
             composable("reports") {
                 ReportsScreen(onOpenReport = { id -> nav.navigate("reports/$id") })
@@ -68,6 +71,7 @@ fun NavGraph() {
             ) {
                 ReportDetailScreen(onBack = { nav.popBackStack() })
             }
+            composable("signals") { SignalsScreen(onBack = { nav.popBackStack() }) }
             composable("settings") { SettingsScreen() }
         }
     }

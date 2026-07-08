@@ -1,5 +1,6 @@
 package com.darius.crux.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -39,7 +40,7 @@ import com.darius.crux.ui.viewmodel.DashboardViewModel
 import java.util.Locale
 
 @Composable
-fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
+fun DashboardScreen(onOpenSignals: () -> Unit = {}, viewModel: DashboardViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val agenda by viewModel.agenda.collectAsState()
     val quote by viewModel.quote.collectAsState()
@@ -60,6 +61,7 @@ fun DashboardScreen(viewModel: DashboardViewModel = viewModel()) {
                     expandedAgendaIndex = if (expandedAgendaIndex == index) null else index
                 },
                 quote = quote,
+                onOpenSignals = onOpenSignals,
             )
         }
 
@@ -74,11 +76,14 @@ private fun DashboardBody(
     expandedAgendaIndex: Int?,
     onToggleAgenda: (Int) -> Unit,
     quote: String?,
+    onOpenSignals: () -> Unit,
 ) {
-    ConditionsStrip(data.conditions)
-    if (data.moodTrend.any { it != null }) {
-        MoodTrace(data.moodTrend, Modifier.padding(horizontal = 20.dp))
-        Spacer(Modifier.height(10.dp))
+    Column(Modifier.fillMaxWidth().clickable(onClick = onOpenSignals)) {
+        ConditionsStrip(data.conditions)
+        if (data.moodTrend.any { it != null }) {
+            MoodTrace(data.moodTrend, Modifier.padding(horizontal = 20.dp))
+            Spacer(Modifier.height(10.dp))
+        }
     }
     HairlineRule()
 
