@@ -39,4 +39,5 @@ def chat_stream(payload: ChatIn, db: Session = Depends(get_db)):
         for token in chat_service.stream_message(db, payload.message):
             yield f"data: {json.dumps({'t': token})}\n\n"
         yield "data: [DONE]\n\n"
-    return StreamingResponse(_events(), media_type="text/event-stream")
+    return StreamingResponse(_events(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
