@@ -98,3 +98,39 @@ fun ChatMessageDTO.toModel() = ChatMessage(
 // ---- Devices (step 7) ----
 
 data class DeviceRegisterDTO(val token: String, val platform: String = "android")
+
+// ---- Dashboard v2: AGENDA + QUOTE ----
+
+data class UpcomingEventDTO(
+    val start: String,
+    val end: String,
+    val subject: String?,
+    val attendee_count: Int?,
+    val is_recurring: Boolean,
+)
+
+data class QuoteDTO(val day: String, val text: String, val source: String)
+
+// ---- Dashboard v2: SIGNALS detail (behind the tappable COND/MoodTrace region) ----
+
+data class SignalTrackDTO(
+    val played_at: String,
+    val track: String,
+    val artist: String?,
+    val valence: Double?,
+    val energy: Double?,
+)
+
+data class SignalDayDTO(
+    val day: String,
+    val sleep_min: Int?,
+    val sleep_score: Double?,
+    val resting_hr: Int?,
+    val mood_valence: Double?,
+    val mood_energy: Double?,
+)
+
+data class SignalsDTO(
+    val recent_tracks: List<SignalTrackDTO>,
+    val daily: List<SignalDayDTO>,
+)
