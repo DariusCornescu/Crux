@@ -123,7 +123,7 @@ def sync_recently_played(db: Session, limit: int = 50) -> int:
                      headers={"Authorization": f"Bearer {token.access_token}"})
     resp.raise_for_status()
 
-    new_rows: list[tuple[ListeningSession, str]] = []
+    new_rows: list[ListeningSession] = []
     for item in resp.json().get("items", []):
         played_at = datetime.fromisoformat(item["played_at"].replace("Z", "+00:00"))
         exists = db.scalar(select(ListeningSession.id).where(ListeningSession.played_at == played_at))
@@ -137,15 +137,15 @@ def sync_recently_played(db: Session, limit: int = 50) -> int:
             spotify_track_id=track.get("id"),
         )
         db.add(row)
-        new_rows.append((row, track.get("id") or ""))
+        new_rows.append(row)
 
-    features = _fetch_audio_features([tid for _, tid in new_rows if tid])
-    for row, tid in new_rows:
-        f = features.get(tid)
+    features = _fetch_audio_features([r.spotify_track_id for r in new_rows if r.spotify_track_id])
+    for r in new_rows:
+        f = features.get(r.spotify_track_id)
         if f:
-            row.valence = f.get("valence")
-            row.energy = f.get("energy")
-            row.tempo = f.get("tempo")
+            r.valence = f.get("valence")
+            r.energy = f.get("energy")
+            r.tempo = f.get("tempo")
 
     token.last_synced_at = datetime.now(timezone.utc)
     db.commit()
@@ -177,3 +177,28 @@ def aggregate_daily_mood(db: Session, days: int = 14) -> None:
         summary.mood_valence = float(avg_valence) if avg_valence is not None else None
         summary.mood_energy = float(avg_energy) if avg_energy is not None else None
     db.commit()
+
+
+def backfill_audio_features(db: Session) -> int:
+    """Re-fetch ReccoBeats features for already-synced tracks that have a
+    spotify_track_id but no valence. Idempotent; returns rows updated."""
+    rows = db.scalars(
+        select(ListeningSession).where(
+            ListeningSession.spotify_track_id.is_not(None),
+            ListeningSession.valence.is_(None),
+        )
+    ).all()
+    if not rows:
+        return 0
+    features = _fetch_audio_features([r.spotify_track_id for r in rows])
+    updated = 0
+    for r in rows:
+        f = features.get(r.spotify_track_id)
+        if f:
+            r.valence = f.get("valence")
+            r.energy = f.get("energy")
+            r.tempo = f.get("tempo")
+            updated += 1
+    db.commit()
+    aggregate_daily_mood(db)
+    return updated

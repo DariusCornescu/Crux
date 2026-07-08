@@ -64,6 +64,8 @@ def build_context(db: Session, days: int = 28) -> dict:
     listening = db.scalars(
         select(ListeningSession).where(ListeningSession.played_at >= since)
     ).all()
+    # Last 20 regardless of window — chat should answer "what was I listening
+    # to?" even after a listening gap, not just within the aggregate window.
     recent_tracks = db.scalars(
         select(ListeningSession).order_by(ListeningSession.played_at.desc()).limit(20)
     ).all()

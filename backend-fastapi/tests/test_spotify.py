@@ -106,3 +106,33 @@ def test_sync_stores_spotify_track_id(db, monkeypatch):
 
     ids = {r.track_name: r.spotify_track_id for r in db.query(ListeningSession).all()}
     assert ids == {"Song A": "trk1", "Song B": "trk2"}
+
+
+def test_backfill_populates_missing_features(db, monkeypatch):
+    db.add_all([
+        ListeningSession(played_at=datetime(2026, 7, 1, 10, tzinfo=timezone.utc),
+                         track_name="Song A", spotify_track_id="trk1"),
+        ListeningSession(played_at=datetime(2026, 7, 1, 11, tzinfo=timezone.utc),
+                         track_name="Song B", spotify_track_id="trk2"),
+    ])
+    db.commit()
+
+    def fake_get(url, **kwargs):
+        return FakeResponse({"content": [
+            {"href": "https://open.spotify.com/track/trk1", "valence": 0.8, "energy": 0.9, "tempo": 174.0},
+            {"href": "https://open.spotify.com/track/trk2", "valence": 0.4, "energy": 0.5, "tempo": 120.0},
+        ]})
+
+    monkeypatch.setattr(spotify.httpx, "get", fake_get)
+
+    assert spotify.backfill_audio_features(db) == 2
+    rows = {r.track_name: r for r in db.query(ListeningSession).all()}
+    assert abs(rows["Song A"].valence - 0.8) < 1e-6
+    summary = db.query(DailySummary).one()
+    assert summary.mood_valence is not None
+
+
+def test_fetch_audio_features_survives_null_content(monkeypatch):
+    monkeypatch.setattr(spotify.httpx, "get",
+                        lambda *a, **k: FakeResponse({"content": None}))
+    assert spotify._fetch_audio_features(["t1"]) == {}

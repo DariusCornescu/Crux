@@ -43,3 +43,19 @@ def test_recent_listening_in_context(db):
     assert first["track"] == "Song A"
     assert first["artist"] == "Artist A"
     assert first["valence"] == 0.8
+
+
+def test_recent_listening_ignores_window_and_orders_newest_first(db):
+    from datetime import datetime, timedelta, timezone
+    from app import chat_service
+    from app.models import ListeningSession
+    old = datetime.now(timezone.utc) - timedelta(days=60)   # outside the 28d window
+    new = datetime.now(timezone.utc)
+    db.add_all([
+        ListeningSession(played_at=old, track_name="Old Song"),
+        ListeningSession(played_at=new, track_name="New Song"),
+    ])
+    db.commit()
+
+    tracks = [t["track"] for t in chat_service.build_context(db)["recent_listening"]]
+    assert tracks == ["New Song", "Old Song"]  # newest first, old row still present

@@ -51,8 +51,9 @@ starts flowing into what already exists.
 ### C. Enrich chat context
 - `app/chat_service.py::build_context`: add a `recent_listening` field — the last
   ~20 `ListeningSession` rows (by `played_at` desc) as
-  `[{day, track, artist, valence, energy}]`. The `listening` rows are already
-  queried in `build_context`; this serializes them into the snapshot.
+  `[{day, track, artist, valence, energy}]`. Queried separately from the
+  window-scoped `listening` rows (last 20 by `played_at` regardless of window)
+  so the chat can answer listening questions even after a gap.
 
 ### D. Backfill existing rows (approved)
 - `app/spotify.py::backfill_audio_features(db)`: select `ListeningSession` rows
