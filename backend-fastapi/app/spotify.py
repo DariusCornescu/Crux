@@ -102,6 +102,7 @@ def _fetch_audio_features(track_ids: list[str]) -> dict[str, dict]:
         except (httpx.HTTPError, ValueError, AttributeError) as e:
             logger.warning("ReccoBeats fetch failed: %s", e)
             continue
+        parsed = 0
         for f in items:
             if not isinstance(f, dict):
                 continue
@@ -109,6 +110,10 @@ def _fetch_audio_features(track_ids: list[str]) -> dict[str, dict]:
             sid = href.rstrip("/").rsplit("/", 1)[-1].split("?")[0] if href else None
             if sid:
                 out[sid] = f
+                parsed += 1
+        if items and not parsed:
+            logger.warning("ReccoBeats returned %d items but no parseable spotify ids "
+                           "(unexpected href shape?)", len(items))
     return out
 
 
@@ -139,7 +144,8 @@ def sync_recently_played(db: Session, limit: int = 50) -> int:
         db.add(row)
         new_rows.append(row)
 
-    features = _fetch_audio_features([r.spotify_track_id for r in new_rows if r.spotify_track_id])
+    features = _fetch_audio_features(list(dict.fromkeys(
+        r.spotify_track_id for r in new_rows if r.spotify_track_id)))
     for r in new_rows:
         f = features.get(r.spotify_track_id)
         if f:
