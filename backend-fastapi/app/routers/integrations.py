@@ -120,6 +120,11 @@ def spotify_sync(db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.post("/spotify/backfill", response_model=SyncResult)
+def spotify_backfill(db: Session = Depends(get_db)):
+    return SyncResult(synced=spotify.backfill_audio_features(db))
+
+
 # ---- Work calendar (published ICS feed — see calendar_sync.py) ----
 
 @router.post("/calendar/sync", response_model=SyncResult)

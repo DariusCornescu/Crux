@@ -72,6 +72,7 @@ class ListeningSession(Base):
     played_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True, unique=True)
     track_name: Mapped[str] = mapped_column(String(256))
     artist: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    spotify_track_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     valence: Mapped[float | None] = mapped_column(Float, nullable=True)  # 0..1
     energy: Mapped[float | None] = mapped_column(Float, nullable=True)  # 0..1
     tempo: Mapped[float | None] = mapped_column(Float, nullable=True)  # BPM

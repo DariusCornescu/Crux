@@ -1,11 +1,14 @@
 """Spotify integration (build-order step 4) — listening history as a mood proxy.
 
-NOTE on audio features: Spotify restricted the /v1/audio-features endpoint for
-applications created after Nov 2024. We request features and degrade gracefully
-(403 -> valence/energy stay NULL) so the sync itself keeps working; mood then
-simply reads as "no data" instead of breaking the pipeline.
+NOTE on audio features: Spotify restricted its own /v1/audio-features endpoint for
+applications created after Nov 2024, so we fetch features from ReccoBeats instead
+(a free, no-auth API that accepts Spotify track ids). We still degrade gracefully
+when ReccoBeats can't serve a track/batch (valence/energy stay NULL) so the sync
+itself keeps working; mood then simply reads as "no data" instead of breaking the
+pipeline.
 """
 import logging
+import time
 from datetime import date, datetime, timedelta, timezone
 
 import httpx
@@ -19,8 +22,9 @@ logger = logging.getLogger(__name__)
 
 TOKEN_URL = "https://accounts.spotify.com/api/token"
 RECENT_URL = "https://api.spotify.com/v1/me/player/recently-played"
-FEATURES_URL = "https://api.spotify.com/v1/audio-features"
 PROVIDER = "spotify"
+RECCO_BATCH = 40
+RECCO_DELAY_S = 0.5
 
 
 def _aware(dt: datetime | None) -> datetime | None:
@@ -76,22 +80,41 @@ def get_valid_token(db: Session) -> OAuthToken | None:
     return token
 
 
-def _fetch_audio_features(track_ids: list[str], access_token: str) -> dict[str, dict]:
-    """Best effort — returns {} when the endpoint is unavailable for this app."""
+def _fetch_audio_features(track_ids: list[str]) -> dict[str, dict]:
+    """Best effort via ReccoBeats — Spotify's own audio-features endpoint is gone
+    for apps created after Nov 2024. Returns {spotify_track_id: feature dict};
+    skips any track/batch the service can't serve (valence stays NULL)."""
     if not track_ids:
         return {}
-    try:
-        resp = httpx.get(FEATURES_URL, params={"ids": ",".join(track_ids)}, timeout=20,
-                         headers={"Authorization": f"Bearer {access_token}"})
-        if resp.status_code != 200:
-            logger.warning("audio-features unavailable (HTTP %d) — storing tracks without mood "
-                           "features (endpoint is restricted for post-2024 Spotify apps)",
-                           resp.status_code)
-            return {}
-        return {f["id"]: f for f in resp.json().get("audio_features", []) if f}
-    except httpx.HTTPError as e:
-        logger.warning("audio-features fetch failed: %s", e)
-        return {}
+    base = get_settings().reccobeats_base_url
+    out: dict[str, dict] = {}
+    for i in range(0, len(track_ids), RECCO_BATCH):
+        if i:
+            time.sleep(RECCO_DELAY_S)  # ReccoBeats rate limit
+        batch = track_ids[i:i + RECCO_BATCH]
+        try:
+            resp = httpx.get(f"{base}/v1/audio-features",
+                             params={"ids": ",".join(batch)}, timeout=20)
+            if resp.status_code != 200:
+                logger.warning("ReccoBeats audio-features unavailable (HTTP %d)", resp.status_code)
+                continue
+            items = resp.json().get("content") or []
+        except (httpx.HTTPError, ValueError, AttributeError) as e:
+            logger.warning("ReccoBeats fetch failed: %s", e)
+            continue
+        parsed = 0
+        for f in items:
+            if not isinstance(f, dict):
+                continue
+            href = f.get("href") or ""
+            sid = href.rstrip("/").rsplit("/", 1)[-1].split("?")[0] if href else None
+            if sid:
+                out[sid] = f
+                parsed += 1
+        if items and not parsed:
+            logger.warning("ReccoBeats returned %d items but no parseable spotify ids "
+                           "(unexpected href shape?)", len(items))
+    return out
 
 
 def sync_recently_played(db: Session, limit: int = 50) -> int:
@@ -105,7 +128,7 @@ def sync_recently_played(db: Session, limit: int = 50) -> int:
                      headers={"Authorization": f"Bearer {token.access_token}"})
     resp.raise_for_status()
 
-    new_rows: list[tuple[ListeningSession, str]] = []
+    new_rows: list[ListeningSession] = []
     for item in resp.json().get("items", []):
         played_at = datetime.fromisoformat(item["played_at"].replace("Z", "+00:00"))
         exists = db.scalar(select(ListeningSession.id).where(ListeningSession.played_at == played_at))
@@ -116,17 +139,19 @@ def sync_recently_played(db: Session, limit: int = 50) -> int:
             played_at=played_at,
             track_name=track.get("name") or "unknown",
             artist=", ".join(a.get("name", "") for a in track.get("artists", [])) or None,
+            spotify_track_id=track.get("id"),
         )
         db.add(row)
-        new_rows.append((row, track.get("id") or ""))
+        new_rows.append(row)
 
-    features = _fetch_audio_features([tid for _, tid in new_rows if tid], token.access_token)
-    for row, tid in new_rows:
-        f = features.get(tid)
+    features = _fetch_audio_features(list(dict.fromkeys(
+        r.spotify_track_id for r in new_rows if r.spotify_track_id)))
+    for r in new_rows:
+        f = features.get(r.spotify_track_id)
         if f:
-            row.valence = f.get("valence")
-            row.energy = f.get("energy")
-            row.tempo = f.get("tempo")
+            r.valence = f.get("valence")
+            r.energy = f.get("energy")
+            r.tempo = f.get("tempo")
 
     token.last_synced_at = datetime.now(timezone.utc)
     db.commit()
@@ -158,3 +183,31 @@ def aggregate_daily_mood(db: Session, days: int = 14) -> None:
         summary.mood_valence = float(avg_valence) if avg_valence is not None else None
         summary.mood_energy = float(avg_energy) if avg_energy is not None else None
     db.commit()
+
+
+def backfill_audio_features(db: Session) -> int:
+    """Re-fetch ReccoBeats features for already-synced tracks that have a
+    spotify_track_id but no valence. Idempotent; returns rows updated."""
+    rows = db.scalars(
+        select(ListeningSession).where(
+            ListeningSession.spotify_track_id.is_not(None),
+            ListeningSession.valence.is_(None),
+        )
+    ).all()
+    if not rows:
+        return 0
+    features = _fetch_audio_features(list(dict.fromkeys(r.spotify_track_id for r in rows)))
+    updated = 0
+    for r in rows:
+        f = features.get(r.spotify_track_id)
+        if f:
+            r.valence = f.get("valence")
+            r.energy = f.get("energy")
+            r.tempo = f.get("tempo")
+            updated += 1
+    db.commit()
+    # Widen the roll-up window to cover the oldest backfilled row — the default
+    # 14 days would silently skip older tracks.
+    oldest = min(r.played_at for r in rows).date()
+    aggregate_daily_mood(db, days=max(14, (date.today() - oldest).days + 1))
+    return updated

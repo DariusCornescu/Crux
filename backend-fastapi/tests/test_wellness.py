@@ -1,10 +1,16 @@
 """Wearable sample ingestion + daily roll-up into DailySummary."""
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, time, timedelta, timezone
+
+# Anchor samples to a fixed hour of TODAY (UTC) so `hours_ago` offsets never
+# cross the UTC midnight boundary — `now() - 9h` did, splitting the roll-up
+# across two DailySummary rows whenever the suite ran before 09:00 UTC.
+_ANCHOR = datetime.combine(datetime.now(timezone.utc).date(),
+                           time(hour=23, tzinfo=timezone.utc))
 
 
 def _sample(kind, value, hours_ago=1, source="health_connect"):
     return {
-        "recorded_at": (datetime.now(timezone.utc) - timedelta(hours=hours_ago)).isoformat(),
+        "recorded_at": (_ANCHOR - timedelta(hours=hours_ago)).isoformat(),
         "kind": kind, "value": value, "source": source,
     }
 

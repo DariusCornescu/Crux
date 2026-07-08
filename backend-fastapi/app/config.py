@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     spotify_client_id: str = ""
     spotify_client_secret: str = ""
     spotify_redirect_uri: str = "http://localhost:8000/integrations/spotify/callback"
+    reccobeats_base_url: str = "https://api.reccobeats.com"
 
     llm_provider: str = "openrouter"  # "openrouter" | "anthropic"
 

@@ -64,6 +64,11 @@ def build_context(db: Session, days: int = 28) -> dict:
     listening = db.scalars(
         select(ListeningSession).where(ListeningSession.played_at >= since)
     ).all()
+    # Last 20 regardless of window — chat should answer "what was I listening
+    # to?" even after a listening gap, not just within the aggregate window.
+    recent_tracks = db.scalars(
+        select(ListeningSession).order_by(ListeningSession.played_at.desc()).limit(20)
+    ).all()
     wellness = db.scalars(select(WellnessSample).where(
         WellnessSample.recorded_at >= since,
         WellnessSample.kind.in_(["stress_score", "hrv_ms"]))).all()
@@ -81,6 +86,11 @@ def build_context(db: Session, days: int = 28) -> dict:
         ],
         "latest_report_highlights": latest_report.highlights if latest_report else None,
         "audio_priming": audio_priming.best_session_audio(activities, listening),
+        "recent_listening": [
+            {"day": t.played_at.date().isoformat(), "track": t.track_name,
+             "artist": t.artist, "valence": t.valence, "energy": t.energy}
+            for t in recent_tracks
+        ],
         "stress_profile": {
             "findings": [f["message"] for f in stress_profile.schedule_overlay(
                 calendar_events, wellness, summaries,
