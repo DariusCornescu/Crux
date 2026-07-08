@@ -173,8 +173,9 @@ class WellnessSample(Base):
 class CalendarEvent(Base):
     """Work-calendar busy blocks (stress-schedule-wearable spec, Phase B).
 
-    Privacy: no meeting titles or attendees are stored — only timing/shape
-    plus a salted SHA-256 of the subject for deduplication.
+    Server is user-owned/single-tenant, so real meeting subjects are stored
+    (Dashboard v2 AGENDA block) alongside a salted SHA-256 of the subject,
+    kept for dedup/upsert matching independent of the display text.
     """
     __tablename__ = "calendar_events"
     __table_args__ = (UniqueConstraint("source", "subject_hash", "start",
@@ -187,4 +188,5 @@ class CalendarEvent(Base):
     attendee_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     is_recurring: Mapped[bool] = mapped_column(Boolean, default=False)
     subject_hash: Mapped[str] = mapped_column(String(64))
+    subject: Mapped[str | None] = mapped_column(String(256), nullable=True)
     source: Mapped[str] = mapped_column(String(16), default="ics")

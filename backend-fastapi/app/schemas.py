@@ -148,6 +148,16 @@ class SyncResult(BaseModel):
     synced: int
 
 
+# ---- Calendar (Dashboard AGENDA block) ----
+
+class UpcomingEvent(BaseModel):
+    start: datetime
+    end: datetime
+    subject: str | None = None
+    attendee_count: int | None = None
+    is_recurring: bool = False
+
+
 # ---- Dashboard payload: one block per instrument ----
 
 class Conditions(BaseModel):

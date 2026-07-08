@@ -4,7 +4,7 @@ Fixture calendar: Mon 09:00 + Mon 10:00 back-to-back, a weekly RRULE (3
 occurrences in window), one after-hours event, one all-day event (skipped).
 All times UTC; meeting_load unit tests pass tz="UTC" explicitly.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -55,6 +55,21 @@ END:VCALENDAR
 WINDOW_START = datetime(2026, 6, 21, tzinfo=timezone.utc)
 WINDOW_END = datetime(2026, 7, 12, tzinfo=timezone.utc)
 
+_FUTURE_START = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y%m%dT090000Z")
+_FUTURE_END = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y%m%dT100000Z")
+
+ICS_FUTURE = ICS.replace(
+    "END:VCALENDAR",
+    f"""BEGIN:VEVENT
+UID:future@test
+DTSTART:{_FUTURE_START}
+DTEND:{_FUTURE_END}
+SUMMARY:Future planning
+END:VEVENT
+END:VCALENDAR
+""",
+)
+
 
 @pytest.fixture
 def configured(monkeypatch):
@@ -62,6 +77,12 @@ def configured(monkeypatch):
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
+
+
+@pytest.fixture
+def configured_future(monkeypatch, configured):
+    monkeypatch.setattr(calendar_sync.httpx, "get", lambda *a, **k: FakeResponse(text=ICS_FUTURE))
+    yield
 
 
 def test_parse_expands_rrule_and_skips_all_day():
@@ -119,3 +140,25 @@ def test_endpoint_and_status(client, db, monkeypatch, configured):
 def test_status_unconfigured(client):
     get_settings.cache_clear()
     assert client.get("/integrations/status").json()["calendar"]["connected"] is False
+
+
+def test_sync_stores_subject(db, monkeypatch, configured):
+    monkeypatch.setattr(calendar_sync.httpx, "get", lambda *a, **k: FakeResponse(text=ICS))
+    monkeypatch.setattr(calendar_sync, "_window", lambda: (WINDOW_START, WINDOW_END))
+
+    calendar_sync.sync_ics(db)
+    subjects = {e.subject for e in db.query(CalendarEvent).all()}
+    assert "Sprint planning" in subjects and "Design review" in subjects
+
+
+def test_upcoming_endpoint_returns_future_events_in_order(client, db, configured_future):
+    calendar_sync.sync_ics(db)
+    r = client.get("/calendar/upcoming?limit=2")
+    assert r.status_code == 200
+    events = r.json()
+    assert len(events) >= 1
+    assert len(events) <= 2
+    starts = [e["start"] for e in events]
+    assert starts == sorted(starts)
+    for e in events:
+        assert set(e) >= {"start", "end", "subject", "attendee_count", "is_recurring"}

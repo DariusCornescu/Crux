@@ -68,6 +68,7 @@ def parse_ics(text: str, window_start: datetime, window_end: datetime) -> list[d
             "attendee_count": attendee_count,
             "is_recurring": str(component.get("UID")) in recurring_uids,
             "subject_hash": _hash_subject(str(component.get("SUMMARY", ""))),
+            "subject": str(component.get("SUMMARY", "")) or None,
         })
     events.sort(key=lambda e: e["start"])
     return events
