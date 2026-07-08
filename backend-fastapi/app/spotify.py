@@ -1,11 +1,14 @@
 """Spotify integration (build-order step 4) — listening history as a mood proxy.
 
-NOTE on audio features: Spotify restricted the /v1/audio-features endpoint for
-applications created after Nov 2024. We request features and degrade gracefully
-(403 -> valence/energy stay NULL) so the sync itself keeps working; mood then
-simply reads as "no data" instead of breaking the pipeline.
+NOTE on audio features: Spotify restricted its own /v1/audio-features endpoint for
+applications created after Nov 2024, so we fetch features from ReccoBeats instead
+(a free, no-auth API that accepts Spotify track ids). We still degrade gracefully
+when ReccoBeats can't serve a track/batch (valence/energy stay NULL) so the sync
+itself keeps working; mood then simply reads as "no data" instead of breaking the
+pipeline.
 """
 import logging
+import time
 from datetime import date, datetime, timedelta, timezone
 
 import httpx
@@ -19,8 +22,9 @@ logger = logging.getLogger(__name__)
 
 TOKEN_URL = "https://accounts.spotify.com/api/token"
 RECENT_URL = "https://api.spotify.com/v1/me/player/recently-played"
-FEATURES_URL = "https://api.spotify.com/v1/audio-features"
 PROVIDER = "spotify"
+RECCO_BATCH = 40
+RECCO_DELAY_S = 0.5
 
 
 def _aware(dt: datetime | None) -> datetime | None:
@@ -76,22 +80,33 @@ def get_valid_token(db: Session) -> OAuthToken | None:
     return token
 
 
-def _fetch_audio_features(track_ids: list[str], access_token: str) -> dict[str, dict]:
-    """Best effort — returns {} when the endpoint is unavailable for this app."""
+def _fetch_audio_features(track_ids: list[str]) -> dict[str, dict]:
+    """Best effort via ReccoBeats — Spotify's own audio-features endpoint is gone
+    for apps created after Nov 2024. Returns {spotify_track_id: {valence, energy,
+    tempo}}; skips any track/batch the service can't serve (valence stays NULL)."""
     if not track_ids:
         return {}
-    try:
-        resp = httpx.get(FEATURES_URL, params={"ids": ",".join(track_ids)}, timeout=20,
-                         headers={"Authorization": f"Bearer {access_token}"})
+    base = get_settings().reccobeats_base_url
+    out: dict[str, dict] = {}
+    for i in range(0, len(track_ids), RECCO_BATCH):
+        if i:
+            time.sleep(RECCO_DELAY_S)  # ReccoBeats rate limit
+        batch = track_ids[i:i + RECCO_BATCH]
+        try:
+            resp = httpx.get(f"{base}/v1/audio-features",
+                             params={"ids": ",".join(batch)}, timeout=20)
+        except httpx.HTTPError as e:
+            logger.warning("ReccoBeats fetch failed: %s", e)
+            continue
         if resp.status_code != 200:
-            logger.warning("audio-features unavailable (HTTP %d) — storing tracks without mood "
-                           "features (endpoint is restricted for post-2024 Spotify apps)",
-                           resp.status_code)
-            return {}
-        return {f["id"]: f for f in resp.json().get("audio_features", []) if f}
-    except httpx.HTTPError as e:
-        logger.warning("audio-features fetch failed: %s", e)
-        return {}
+            logger.warning("ReccoBeats audio-features unavailable (HTTP %d)", resp.status_code)
+            continue
+        for f in resp.json().get("content", []):
+            href = f.get("href") or ""
+            sid = href.rsplit("/", 1)[-1] if href else None
+            if sid:
+                out[sid] = f
+    return out
 
 
 def sync_recently_played(db: Session, limit: int = 50) -> int:
@@ -120,7 +135,7 @@ def sync_recently_played(db: Session, limit: int = 50) -> int:
         db.add(row)
         new_rows.append((row, track.get("id") or ""))
 
-    features = _fetch_audio_features([tid for _, tid in new_rows if tid], token.access_token)
+    features = _fetch_audio_features([tid for _, tid in new_rows if tid])
     for row, tid in new_rows:
         f = features.get(tid)
         if f:

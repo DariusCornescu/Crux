@@ -45,9 +45,10 @@ def test_sync_with_features_and_mood_aggregation(db, monkeypatch):
     def fake_get(url, **kwargs):
         if "recently-played" in url:
             return FakeResponse(_recent(now_iso))
-        return FakeResponse({"audio_features": [
-            {"id": "trk1", "valence": 0.8, "energy": 0.9, "tempo": 174.0},
-            {"id": "trk2", "valence": 0.4, "energy": 0.5, "tempo": 120.0},
+        # ReccoBeats audio-features: content[] with href -> spotify id
+        return FakeResponse({"content": [
+            {"href": "https://open.spotify.com/track/trk1", "valence": 0.8, "energy": 0.9, "tempo": 174.0},
+            {"href": "https://open.spotify.com/track/trk2", "valence": 0.4, "energy": 0.5, "tempo": 120.0},
         ]})
 
     monkeypatch.setattr(spotify.httpx, "get", fake_get)
