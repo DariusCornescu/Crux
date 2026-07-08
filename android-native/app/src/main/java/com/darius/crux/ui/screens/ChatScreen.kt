@@ -47,7 +47,8 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
     val listState = rememberLazyListState()
     var input by remember { mutableStateOf("") }
 
-    LaunchedEffect(uiState.messages.size) {
+    // Keyed on the last row's length too, so the list keeps following streamed tokens.
+    LaunchedEffect(uiState.messages.size, uiState.messages.lastOrNull()?.content?.length) {
         if (uiState.messages.isNotEmpty()) {
             listState.animateScrollToItem(uiState.messages.size - 1)
         }

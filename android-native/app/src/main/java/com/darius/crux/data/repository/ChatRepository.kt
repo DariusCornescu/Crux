@@ -8,13 +8,11 @@ import com.darius.crux.network.RetrofitClient
 import com.darius.crux.network.CruxApi
 import com.darius.crux.network.toModel
 import com.google.gson.Gson
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -80,11 +78,12 @@ class ChatRepository(private val api: CruxApi = RetrofitClient.api) {
 
     /**
      * Streams assistant tokens from `POST chat/stream` (SSE). Raw OkHttp — Retrofit has no
-     * first-class SSE support. Cancellation-safe: if the collecting coroutine is cancelled,
-     * the underlying call is cancelled too, which unblocks the blocking `readUtf8Line()` read
+     * first-class SSE support. The blocking read loop runs in a child coroutine on
+     * Dispatchers.IO; `awaitClose { call.cancel() }` runs as soon as the collector stops
+     * (cancellation included), aborting the socket and unblocking `readUtf8Line()`
      * immediately instead of leaving it hanging until the 120s read timeout.
      */
-    fun streamMessage(message: String): Flow<String> = flow {
+    fun streamMessage(message: String): Flow<String> = callbackFlow {
         val requestBody = gson.toJson(mapOf("message" to message))
             .toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
@@ -92,27 +91,30 @@ class ChatRepository(private val api: CruxApi = RetrofitClient.api) {
             .post(requestBody)
             .build()
         val call = streamingClient.newCall(request)
-        val cancelHandle = currentCoroutineContext()[Job]?.invokeOnCompletion {
-            if (it is CancellationException) call.cancel()
-        }
-        try {
-            call.execute().use { response ->
-                if (!response.isSuccessful) {
-                    throw IOException("SERVER ${response.code}")
+
+        launch(Dispatchers.IO) {
+            try {
+                call.execute().use { response ->
+                    if (!response.isSuccessful) {
+                        throw IOException("SERVER ${response.code}")
+                    }
+                    val source = response.body!!.source()
+                    while (true) {
+                        val line = source.readUtf8Line() ?: break // EOF without [DONE] — end normally
+                        if (!line.startsWith("data: ")) continue
+                        val payload = line.removePrefix("data: ")
+                        if (payload == "[DONE]") break
+                        val token = runCatching { gson.fromJson(payload, StreamTokenDTO::class.java)?.t }
+                            .getOrNull()
+                        if (!token.isNullOrEmpty()) send(token) // suspends if the collector lags
+                    }
                 }
-                val source = response.body!!.source()
-                while (true) {
-                    val line = source.readUtf8Line() ?: break // EOF without [DONE] — end normally
-                    if (!line.startsWith("data: ")) continue
-                    val payload = line.removePrefix("data: ")
-                    if (payload == "[DONE]") break
-                    val token = runCatching { gson.fromJson(payload, StreamTokenDTO::class.java)?.t }
-                        .getOrNull()
-                    if (!token.isNullOrEmpty()) emit(token)
-                }
+                close()
+            } catch (e: Exception) {
+                close(e) // no-op if the flow is already closing (e.g. read aborted by cancel)
             }
-        } finally {
-            cancelHandle?.dispose()
         }
-    }.flowOn(Dispatchers.IO)
+
+        awaitClose { call.cancel() }
+    }
 }
