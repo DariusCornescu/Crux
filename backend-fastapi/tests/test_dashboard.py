@@ -2,7 +2,7 @@ def test_demo_payload_when_empty(client):
     d = client.get("/dashboard/summary").json()
     assert d["demo"] is True
     assert d["gate"]["best_split"] == 6.98
-    assert d["gate"]["pb"] == 6.91
+    assert "pb" not in d["gate"]
     assert len(d["mood_trend"]) == 14
     assert len(d["rail"]) == 6
 

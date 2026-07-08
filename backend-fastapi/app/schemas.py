@@ -207,7 +207,6 @@ class RailEntry(BaseModel):
 
 class GateBlock(BaseModel):
     best_split: float | None = None
-    pb: float = 6.91
     session_note: str | None = None
     splits: list[float] = []
 

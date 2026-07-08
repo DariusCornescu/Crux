@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 HISTORY_TURNS = 10  # prior messages handed to Claude
 
 SYSTEM_PROMPT = """You are Crux's chat analyst — the on-demand counterpart of
-its weekly reports. One athlete: former national 60m champion (PB 6.91),
+its weekly reports. One athlete: former national 60m champion,
 rebuilding an aerobic base, preparing for mountaineering. Three physiological
 modes, always treated distinctly: explosive (sprint/anaerobic), aerobic
 (endurance), loaded (ruck/hike under load).

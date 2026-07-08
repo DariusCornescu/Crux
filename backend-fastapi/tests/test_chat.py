@@ -59,3 +59,11 @@ def test_recent_listening_ignores_window_and_orders_newest_first(db):
 
     tracks = [t["track"] for t in chat_service.build_context(db)["recent_listening"]]
     assert tracks == ["New Song", "Old Song"]  # newest first, old row still present
+
+
+def test_clear_history(client):
+    client.post("/chat", json={"message": "hello"})
+    r = client.delete("/chat/history")
+    assert r.status_code == 200 and r.json()["deleted"] == 2
+    assert client.get("/chat/history").json() == []
+    assert client.delete("/chat/history").json()["deleted"] == 0

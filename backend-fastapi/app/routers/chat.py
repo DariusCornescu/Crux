@@ -21,3 +21,10 @@ def history(limit: int = 50, db: Session = Depends(get_db)):
 @router.post("", response_model=ChatOut)
 def chat(payload: ChatIn, db: Session = Depends(get_db)):
     return ChatOut(reply=chat_service.send_message(db, payload.message))
+
+
+@router.delete("/history")
+def clear_history(db: Session = Depends(get_db)):
+    deleted = db.query(ChatMessage).delete()
+    db.commit()
+    return {"deleted": deleted}
