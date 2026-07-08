@@ -59,3 +59,32 @@ def test_sync_with_features_and_mood_aggregation(db, monkeypatch):
     summary = db.query(DailySummary).one()
     assert abs(summary.mood_valence - 0.6) < 1e-6
     assert abs(summary.mood_energy - 0.7) < 1e-6
+
+
+def test_fetch_audio_features_batches_and_merges(monkeypatch):
+    calls = []
+    sleeps = []
+    monkeypatch.setattr(spotify.time, "sleep", lambda s: sleeps.append(s))
+
+    def fake_get(url, params=None, **kwargs):
+        ids = params["ids"].split(",")
+        calls.append(len(ids))
+        return FakeResponse({"content": [
+            {"href": f"https://open.spotify.com/track/{i}", "valence": 0.5} for i in ids
+        ]})
+
+    monkeypatch.setattr(spotify.httpx, "get", fake_get)
+
+    out = spotify._fetch_audio_features([f"t{n}" for n in range(41)])
+    assert calls == [40, 1]          # split into two batches
+    assert sleeps == [spotify.RECCO_DELAY_S]  # one sleep, between batches only
+    assert len(out) == 41            # results merged across batches
+
+
+def test_fetch_audio_features_survives_malformed_200(monkeypatch):
+    class BadJson:
+        status_code = 200
+        def json(self):
+            raise ValueError("not json")
+    monkeypatch.setattr(spotify.httpx, "get", lambda *a, **k: BadJson())
+    assert spotify._fetch_audio_features(["t1"]) == {}

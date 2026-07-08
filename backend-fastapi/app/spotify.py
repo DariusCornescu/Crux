@@ -82,8 +82,8 @@ def get_valid_token(db: Session) -> OAuthToken | None:
 
 def _fetch_audio_features(track_ids: list[str]) -> dict[str, dict]:
     """Best effort via ReccoBeats — Spotify's own audio-features endpoint is gone
-    for apps created after Nov 2024. Returns {spotify_track_id: {valence, energy,
-    tempo}}; skips any track/batch the service can't serve (valence stays NULL)."""
+    for apps created after Nov 2024. Returns {spotify_track_id: feature dict};
+    skips any track/batch the service can't serve (valence stays NULL)."""
     if not track_ids:
         return {}
     base = get_settings().reccobeats_base_url
@@ -95,15 +95,18 @@ def _fetch_audio_features(track_ids: list[str]) -> dict[str, dict]:
         try:
             resp = httpx.get(f"{base}/v1/audio-features",
                              params={"ids": ",".join(batch)}, timeout=20)
-        except httpx.HTTPError as e:
+            if resp.status_code != 200:
+                logger.warning("ReccoBeats audio-features unavailable (HTTP %d)", resp.status_code)
+                continue
+            items = resp.json().get("content", [])
+        except (httpx.HTTPError, ValueError, AttributeError) as e:
             logger.warning("ReccoBeats fetch failed: %s", e)
             continue
-        if resp.status_code != 200:
-            logger.warning("ReccoBeats audio-features unavailable (HTTP %d)", resp.status_code)
-            continue
-        for f in resp.json().get("content", []):
+        for f in items:
+            if not isinstance(f, dict):
+                continue
             href = f.get("href") or ""
-            sid = href.rsplit("/", 1)[-1] if href else None
+            sid = href.rstrip("/").rsplit("/", 1)[-1].split("?")[0] if href else None
             if sid:
                 out[sid] = f
     return out
