@@ -131,10 +131,14 @@ def sync_recently_played(db: Session, limit: int = 50) -> int:
     new_rows: list[ListeningSession] = []
     for item in resp.json().get("items", []):
         played_at = datetime.fromisoformat(item["played_at"].replace("Z", "+00:00"))
-        exists = db.scalar(select(ListeningSession.id).where(ListeningSession.played_at == played_at))
-        if exists:
-            continue
         track = item.get("track") or {}
+        existing = db.scalar(select(ListeningSession).where(ListeningSession.played_at == played_at))
+        if existing is not None:
+            # Rows stored before spotify_track_id existed: adopt the id so the
+            # backfill endpoint can fetch their audio features.
+            if existing.spotify_track_id is None and track.get("id"):
+                existing.spotify_track_id = track.get("id")
+            continue
         row = ListeningSession(
             played_at=played_at,
             track_name=track.get("name") or "unknown",
