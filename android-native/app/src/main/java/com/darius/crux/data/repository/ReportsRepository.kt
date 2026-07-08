@@ -4,6 +4,7 @@ import android.util.Log
 import com.darius.crux.data.model.Report
 import com.darius.crux.network.RetrofitClient
 import com.darius.crux.network.CruxApi
+import com.darius.crux.network.MetricDayDTO
 import com.darius.crux.network.toModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -31,6 +32,20 @@ class ReportsRepository(private val api: CruxApi = RetrofitClient.api) {
             val response = api.getReport(id)
             if (response.isSuccessful && response.body() != null) {
                 RepoResult.Success(response.body()!!.toModel())
+            } else {
+                RepoResult.Error("SERVER ${response.code()}")
+            }
+        } catch (e: Exception) {
+            RepoResult.Error("NO SIGNAL — ${e.message ?: "network error"}")
+        }
+    }
+
+    /** WEEK IN NUMBERS mini-charts on the report detail screen; null-worthy on failure, not fatal. */
+    suspend fun getReportMetrics(id: Long): RepoResult<List<MetricDayDTO>> = withContext(Dispatchers.IO) {
+        try {
+            val response = api.getReportMetrics(id.toInt())
+            if (response.isSuccessful && response.body() != null) {
+                RepoResult.Success(response.body()!!.days)
             } else {
                 RepoResult.Error("SERVER ${response.code()}")
             }

@@ -21,6 +21,7 @@ import com.darius.crux.ui.components.ErrorStrip
 import com.darius.crux.ui.components.HairlineRule
 import com.darius.crux.ui.components.LoadingStrip
 import com.darius.crux.ui.components.MarkdownLite
+import com.darius.crux.ui.components.WeekInNumbers
 import com.darius.crux.ui.theme.Graphite
 import com.darius.crux.ui.viewmodel.ReportDetailViewModel
 
@@ -53,7 +54,14 @@ fun ReportDetailScreen(
                         "${report.kind.uppercase()} · ${report.periodStart} → ${report.periodEnd}",
                         style = MaterialTheme.typography.labelMedium.copy(color = Graphite),
                     )
-                    Spacer(Modifier.height(12.dp))
+                }
+
+                uiState.metrics?.let { metrics ->
+                    WeekInNumbers(metrics)
+                    HairlineRule()
+                }
+
+                Column(Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
                     MarkdownLite(report.bodyMd)
                 }
             }

@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.darius.crux.data.model.Report
 import com.darius.crux.data.repository.RepoResult
 import com.darius.crux.data.repository.ReportsRepository
+import com.darius.crux.network.MetricDayDTO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,6 +16,8 @@ data class ReportDetailUiState(
     val report: Report? = null,
     val isLoading: Boolean = true,
     val error: String? = null,
+    // null hides the WEEK IN NUMBERS section — a metrics failure never blocks the report body.
+    val metrics: List<MetricDayDTO>? = null,
 )
 
 /** reportId arrives through the nav back-stack entry's SavedStateHandle. */
@@ -38,6 +41,14 @@ class ReportDetailViewModel(savedStateHandle: SavedStateHandle) : ViewModel() {
                 is RepoResult.Error -> _uiState.value =
                     _uiState.value.copy(isLoading = false, error = result.message)
             }
+
+            // Independent of the report fetch above — a metrics failure must never
+            // block or error out the report body, it just hides WEEK IN NUMBERS.
+            val metrics = when (val result = repository.getReportMetrics(reportId)) {
+                is RepoResult.Success -> result.data
+                is RepoResult.Error -> null
+            }
+            _uiState.value = _uiState.value.copy(metrics = metrics)
         }
     }
 }

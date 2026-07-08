@@ -24,7 +24,6 @@ val sampleDashboard = DashboardData(
     ),
     gate = GateBlock(
         bestSplit = 6.98,
-        pb = 6.91,
         sessionNote = "60m fly ×3 · rest 8' · RPE 8",
         splits = listOf(7.04, 6.98, 7.02),
     ),

@@ -22,6 +22,9 @@ interface CruxApi {
     @POST("reports/generate")
     suspend fun generateReport(): Response<ReportDTO>
 
+    @GET("reports/{id}/metrics")
+    suspend fun getReportMetrics(@Path("id") id: Int): Response<ReportMetricsDTO>
+
     @GET("integrations/status")
     suspend fun getIntegrationsStatus(): Response<IntegrationsStatusDTO>
 

@@ -17,7 +17,6 @@ data class Conditions(val sleepMin: Int?, val restingHr: Int?, val moodValence: 
 
 data class GateBlock(
     val bestSplit: Double?,
-    val pb: Double,
     val sessionNote: String?,
     val splits: List<Double>,
 )
