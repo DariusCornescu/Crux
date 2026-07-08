@@ -67,3 +67,17 @@ def test_clear_history(client):
     assert r.status_code == 200 and r.json()["deleted"] == 2
     assert client.get("/chat/history").json() == []
     assert client.delete("/chat/history").json()["deleted"] == 0
+
+
+def test_chat_stream_offline_sse(client, db):
+    with client.stream("POST", "/chat/stream", json={"message": "km this week?"}) as r:
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith("text/event-stream")
+        lines = [ln for ln in r.iter_lines() if ln]
+    assert lines[-1] == "data: [DONE]"
+    import json as _json
+    tokens = [_json.loads(ln[6:])["t"] for ln in lines[:-1] if ln.startswith("data: ")]
+    assert "OFFLINE MODE" in "".join(tokens)
+    history = client.get("/chat/history").json()
+    assert [m["role"] for m in history] == ["user", "assistant"]
+    assert "OFFLINE MODE" in history[-1]["content"]

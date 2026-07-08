@@ -152,3 +152,35 @@ def send_message(db: Session, message: str) -> str:
     db.add(ChatMessage(role="assistant", content=reply))
     db.commit()
     return reply
+
+
+def stream_message(db: Session, message: str):
+    """Yield reply tokens; persist both turns when the stream completes."""
+    history = list(reversed(db.scalars(
+        select(ChatMessage).order_by(ChatMessage.created_at.desc()).limit(HISTORY_TURNS)
+    ).all()))
+    db.add(ChatMessage(role="user", content=message))
+    db.commit()
+    context = build_context(db)
+
+    parts: list[str] = []
+    if llm.is_configured():
+        msgs = [{"role": "user" if m.role == "user" else "assistant", "content": m.content}
+                for m in history] + [{"role": "user", "content": message}]
+        try:
+            for token in llm.stream(system=SYSTEM_PROMPT + json.dumps(context),
+                                    messages=msgs, max_tokens=1000):
+                parts.append(token)
+                yield token
+        except Exception as e:
+            logger.error("Claude stream failed: %s", e)
+            tail = " — SIGNAL LOST" if parts else f"SIGNAL LOST — Claude call failed ({e})."
+            parts.append(tail)
+            yield tail
+    else:
+        fallback = _fallback_reply(context)
+        parts.append(fallback)
+        yield fallback
+
+    db.add(ChatMessage(role="assistant", content="".join(parts)))
+    db.commit()

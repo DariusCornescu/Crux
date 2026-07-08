@@ -1,4 +1,7 @@
+import json
+
 from fastapi import APIRouter, Depends
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -28,3 +31,12 @@ def clear_history(db: Session = Depends(get_db)):
     deleted = db.query(ChatMessage).delete()
     db.commit()
     return {"deleted": deleted}
+
+
+@router.post("/stream")
+def chat_stream(payload: ChatIn, db: Session = Depends(get_db)):
+    def _events():
+        for token in chat_service.stream_message(db, payload.message):
+            yield f"data: {json.dumps({'t': token})}\n\n"
+        yield "data: [DONE]\n\n"
+    return StreamingResponse(_events(), media_type="text/event-stream")
