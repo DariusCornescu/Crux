@@ -81,6 +81,18 @@ class ReportGenerateIn(BaseModel):
     week_start: date | None = None
 
 
+class MetricDay(BaseModel):
+    day: date
+    km: float = 0
+    vert_m: float = 0
+    mood_valence: float | None = None
+    sessions: int = 0
+
+
+class ReportMetricsOut(BaseModel):
+    days: list[MetricDay]
+
+
 class ChatIn(BaseModel):
     message: str
 
