@@ -33,11 +33,13 @@ class DashboardViewModel : ViewModel() {
 
     init {
         load()
-        loadAgenda()
-        loadQuote()
     }
 
     fun load() {
+        // RETRY re-enters here — refresh agenda/quote too (idempotent, non-blocking),
+        // otherwise a failed offline start would leave them null forever.
+        loadAgenda()
+        loadQuote()
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             when (val result = repository.getDashboard()) {

@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.darius.crux.data.model.Conditions
@@ -109,8 +110,11 @@ private fun DashboardBody(
         HairlineRule()
         Text(
             quote,
-            style = MaterialTheme.typography.bodyMedium.copy(color = Graphite),
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+            style = MaterialTheme.typography.bodyMedium.copy(
+                color = Graphite,
+                textAlign = TextAlign.Center,
+            ),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
         )
     }
 }

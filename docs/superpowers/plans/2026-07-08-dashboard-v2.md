@@ -22,7 +22,7 @@
 - Create: `backend-fastapi/app/routers/calendar.py`, `alembic/versions/<generated>_calendar_event_subject.py`
 - Test: `backend-fastapi/tests/test_calendar_sync.py`
 
-- [ ] **Step 1: Failing tests** — append to `tests/test_calendar_sync.py` (it already has an `ICS` fixture with SUMMARY lines like "Sprint planning" and a `configured` fixture that monkeypatches settings + httpx; reuse its patterns — read the file first):
+- [x] **Step 1: Failing tests** — append to `tests/test_calendar_sync.py` (it already has an `ICS` fixture with SUMMARY lines like "Sprint planning" and a `configured` fixture that monkeypatches settings + httpx; reuse its patterns — read the file first):
 
 ```python
 def test_sync_stores_subject(db, configured):
@@ -53,9 +53,9 @@ by appending a second ICS constant `ICS_FUTURE` built with
 and a `configured_future` fixture, then assert `len(events) >= 1` with that.
 Follow the file's existing fixture style.
 
-- [ ] **Step 2: Run → FAIL** (no `subject` attribute / 404 on /calendar/upcoming).
+- [x] **Step 2: Run → FAIL** (no `subject` attribute / 404 on /calendar/upcoming).
 
-- [ ] **Step 3: Model + migration.** In `app/models.py::CalendarEvent` after `subject_hash`:
+- [x] **Step 3: Model + migration.** In `app/models.py::CalendarEvent` after `subject_hash`:
 ```python
     subject: Mapped[str | None] = mapped_column(String(256), nullable=True)
 ```
@@ -68,13 +68,13 @@ def downgrade() -> None:
     op.drop_column("calendar_events", "subject")
 ```
 
-- [ ] **Step 4: parse_ics.** In `app/calendar_sync.py::parse_ics`, in the events.append dict, add:
+- [x] **Step 4: parse_ics.** In `app/calendar_sync.py::parse_ics`, in the events.append dict, add:
 ```python
             "subject": str(component.get("SUMMARY", "")) or None,
 ```
 (The upsert loop in `sync_ics` uses `**data` / setattr over dict keys — no other change.)
 
-- [ ] **Step 5: Schema + router.** In `app/schemas.py`:
+- [x] **Step 5: Schema + router.** In `app/schemas.py`:
 ```python
 class UpcomingEvent(BaseModel):
     start: datetime
@@ -114,9 +114,9 @@ def upcoming(limit: int = Query(2, ge=1, le=10), db: Session = Depends(get_db)):
 ```
 Register in `app/main.py`: add `calendar` to the `from app.routers import (...)` list and `app.include_router(calendar.router)` beside the others (module name `calendar` shadows the stdlib inside `app.routers` only — safe as a submodule import, but import it as `from app.routers import calendar as calendar_router` if the plain name collides; verify by running the suite).
 
-- [ ] **Step 6: Run** `pytest tests/test_calendar_sync.py tests/test_migrations.py -q` → PASS; full suite → 85 passed.
+- [x] **Step 6: Run** `pytest tests/test_calendar_sync.py tests/test_migrations.py -q` → PASS; full suite → 85 passed.
 
-- [ ] **Step 7: Commit** `feat: calendar events store subjects; GET /calendar/upcoming for the AGENDA block`
+- [x] **Step 7: Commit** `feat: calendar events store subjects; GET /calendar/upcoming for the AGENDA block`
 
 ---
 
@@ -127,7 +127,7 @@ Register in `app/main.py`: add `calendar` to the `from app.routers import (...)`
 - Create: `app/quotes.py`, `app/routers/quote.py`, `alembic/versions/<generated>_daily_quotes.py`
 - Test: create `backend-fastapi/tests/test_quote.py`
 
-- [ ] **Step 1: Failing tests** — `tests/test_quote.py`:
+- [x] **Step 1: Failing tests** — `tests/test_quote.py`:
 ```python
 """Daily quote: static fallback offline, cached per day, endpoint shape."""
 from app import quotes
@@ -150,9 +150,9 @@ def test_quote_endpoint(client):
     assert body["text"]
 ```
 
-- [ ] **Step 2: Run → FAIL** (no module/model).
+- [x] **Step 2: Run → FAIL** (no module/model).
 
-- [ ] **Step 3: Model + migration.** `app/models.py`:
+- [x] **Step 3: Model + migration.** `app/models.py`:
 ```python
 class DailyQuote(Base):
     __tablename__ = "daily_quotes"
@@ -180,7 +180,7 @@ def downgrade() -> None:
 ```
 Run the drift-guard after — if it complains about nullable/server_default details, match the model exactly.
 
-- [ ] **Step 4: `app/quotes.py`:**
+- [x] **Step 4: `app/quotes.py`:**
 ```python
 """Daily motivational line — LLM-personalized from the week's training, cached
 per day in daily_quotes, deterministic static fallback offline."""
@@ -251,7 +251,7 @@ def get_today(db: Session) -> DailyQuote:
     return row
 ```
 
-- [ ] **Step 5: Router** `app/routers/quote.py`:
+- [x] **Step 5: Router** `app/routers/quote.py`:
 ```python
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -277,9 +277,9 @@ def today(db: Session = Depends(get_db)):
 ```
 Register in `app/main.py` like the others.
 
-- [ ] **Step 6: Run** `pytest tests/test_quote.py tests/test_migrations.py -q` → PASS; full suite → 87 passed.
+- [x] **Step 6: Run** `pytest tests/test_quote.py tests/test_migrations.py -q` → PASS; full suite → 87 passed.
 
-- [ ] **Step 7: Commit** `feat: daily data-aware quote (LLM + static fallback), GET /quote/today`
+- [x] **Step 7: Commit** `feat: daily data-aware quote (LLM + static fallback), GET /quote/today`
 
 ---
 
@@ -384,9 +384,9 @@ Task 2 code-review ride-along (`test_quote_llm_branch_and_failure_fallback`,
 - Modify: `ui/screens/DashboardScreen.kt`, `ui/components/Instruments.kt`, `util/Constants.kt`, `network/DTOs.kt`, `network/CruxApi.kt`, `data/repository/DashboardRepository.kt` (or a new small repo), `ui/viewmodel/DashboardViewModel.kt`
 - READ FIRST for patterns: `network/CruxApi.kt`, `network/DTOs.kt`, `data/repository/ReportsRepository.kt`, `ui/viewmodel/DashboardViewModel.kt`, `ui/components/Panels.kt`
 
-- [ ] **Step 1: Remove GATE.** In `DashboardScreen.kt` delete `GateInstrument(data.gate)` + the `HairlineRule()` directly after it and the `GateInstrument` import. In `Instruments.kt` delete the `GateInstrument` composable + now-unused imports (keep `StripInstrument`/`AltiInstrument`). Delete `SPRINT_PB_SECONDS` from `util/Constants.kt` (delete the file only if it becomes empty and nothing imports it).
+- [x] **Step 1: Remove GATE.** In `DashboardScreen.kt` delete `GateInstrument(data.gate)` + the `HairlineRule()` directly after it and the `GateInstrument` import. In `Instruments.kt` delete the `GateInstrument` composable + now-unused imports (keep `StripInstrument`/`AltiInstrument`). Delete `SPRINT_PB_SECONDS` from `util/Constants.kt` (delete the file only if it becomes empty and nothing imports it).
 
-- [ ] **Step 2: DTOs + API.** In `DTOs.kt` add:
+- [x] **Step 2: DTOs + API.** In `DTOs.kt` add:
 ```kotlin
 data class UpcomingEventDto(
     val start: String, val end: String,
@@ -405,18 +405,18 @@ data class QuoteDto(val day: String, val text: String, val source: String)
     suspend fun quoteToday(): QuoteDto
 ```
 
-- [ ] **Step 3: ViewModel.** In `DashboardViewModel`, add two independent lazily-loaded state flows (`agenda: List<UpcomingEventDto>?`, `quote: String?`), each fetched in its own `viewModelScope.launch` with try/catch → null on failure (hidden UI). Follow the existing UiState/StateFlow pattern in the file; do NOT block or merge into the main dashboard load.
+- [x] **Step 3: ViewModel.** In `DashboardViewModel`, add two independent lazily-loaded state flows (`agenda: List<UpcomingEventDto>?`, `quote: String?`), each fetched in its own `viewModelScope.launch` with try/catch → null on failure (hidden UI). Follow the existing UiState/StateFlow pattern in the file; do NOT block or merge into the main dashboard load.
 
-- [ ] **Step 4: AGENDA UI.** In `DashboardScreen.kt`, where GATE used to render, add an `AgendaBlock(events, expandedIndex, onToggle)` composable (new, in `ui/components/Panels.kt` or inline in the screen file — follow where sibling small blocks live):
+- [x] **Step 4: AGENDA UI.** In `DashboardScreen.kt`, where GATE used to render, add an `AgendaBlock(events, expandedIndex, onToggle)` composable (new, in `ui/components/Panels.kt` or inline in the screen file — follow where sibling small blocks live):
   - Hidden entirely when `events.isNullOrEmpty()`.
   - Engraved label "NEXT UP" (labelSmall, GateRed accent like "COND").
   - Per event a row: `HH:mm–HH:mm · <subject or "BUSY">` — time in Plex Mono (labelMedium), subject in bodyMedium; today's events get GateRed time, others Ink.
   - Tap toggles an expanded block under the row: weekday + date line, duration in minutes, `ATTENDEES <n>` when non-null. Hairline rules, no cards, 20dp margins — match the file's conventions.
   - Parse ISO datetimes with `java.time.OffsetDateTime.parse` and convert to the device zone.
 
-- [ ] **Step 5: QUOTE UI.** At the bottom of `DashboardBody` (after `AltiInstrument`), when `quote != null`: `HairlineRule()` then the quote text centered, `bodyMedium` in Graphite, 20dp horizontal padding, 12dp vertical.
+- [x] **Step 5: QUOTE UI.** At the bottom of `DashboardBody` (after `AltiInstrument`), when `quote != null`: `HairlineRule()` then the quote text centered, `bodyMedium` in Graphite, 20dp horizontal padding, 12dp vertical.
 
-- [ ] **Step 6: Build** `.\gradlew.bat assembleDebug` → BUILD SUCCESSFUL. **Commit** `feat(android): AGENDA + daily quote on Dashboard; GATE removed`
+- [x] **Step 6: Build** `.\gradlew.bat assembleDebug` → BUILD SUCCESSFUL. **Commit** `feat(android): AGENDA + daily quote on Dashboard; GATE removed`
 
 ---
 
@@ -427,7 +427,7 @@ data class QuoteDto(val day: String, val text: String, val source: String)
 - Modify: `network/DTOs.kt`, `network/CruxApi.kt`, `data/repository/` (new `SignalsRepository.kt` following `ReportsRepository` pattern), `ui/navigation/NavGraph.kt`, `ui/screens/DashboardScreen.kt`
 - READ FIRST: `ui/navigation/NavGraph.kt` (how `reports/{id}` is pushed), `ui/screens/ReportDetailScreen.kt` (pushed-screen scaffold/back pattern)
 
-- [ ] **Step 1: DTOs + API.**
+- [x] **Step 1: DTOs + API.**
 ```kotlin
 data class SignalTrackDto(@SerializedName("played_at") val playedAt: String, val track: String,
                           val artist: String?, val valence: Double?, val energy: Double?)
@@ -441,23 +441,23 @@ data class SignalsDto(@SerializedName("recent_tracks") val recentTracks: List<Si
 ```
 `CruxApi`: `@GET("signals/detail") suspend fun signalsDetail(): SignalsDto`
 
-- [ ] **Step 2: Repository + ViewModel** following the `ReportsRepository`/`ReportDetailViewModel` patterns (RepoResult, UiState with isLoading/error/data, load() on init).
+- [x] **Step 2: Repository + ViewModel** following the `ReportsRepository`/`ReportDetailViewModel` patterns (RepoResult, UiState with isLoading/error/data, load() on init).
 
-- [ ] **Step 3: SignalsScreen.** Timing-sheet style, vertical scroll:
+- [x] **Step 3: SignalsScreen.** Timing-sheet style, vertical scroll:
   - Header row: "SIGNALS" titleSmall + a back affordance consistent with `ReportDetailScreen`.
   - Section `LISTENING — LAST 30`: per track one row `HH:mm  TITLE — ARTIST   ▲0.82` (mono time, sans title, mono valence right-aligned; `--` when valence null). Group by day with an engraved date row between days.
   - `HairlineRule()`, then section `CONDITIONS — 14 DAYS`: header row `DAY  SLEEP  RHR  MOOD` in labelSmall Graphite; one mono row per day (`7:12`-style sleep from minutes, `--` for nulls).
   - Loading/error via the existing `LoadingStrip`/`ErrorStrip` components.
 
-- [ ] **Step 4: Wire navigation.** In `NavGraph.kt` add `composable("signals") { SignalsScreen(onBack = { nav.popBackStack() }) }` beside the `reports/{id}` route. In `DashboardScreen.kt`, wrap the top region (`ConditionsStrip` + `MoodTrace` block) in a `Column(Modifier.clickable { onOpenSignals() })`; thread an `onOpenSignals: () -> Unit` parameter from the NavGraph the same way `ReportsScreen(onOpenReport=...)` is threaded.
+- [x] **Step 4: Wire navigation.** In `NavGraph.kt` add `composable("signals") { SignalsScreen(onBack = { nav.popBackStack() }) }` beside the `reports/{id}` route. In `DashboardScreen.kt`, wrap the top region (`ConditionsStrip` + `MoodTrace` block) in a `Column(Modifier.clickable { onOpenSignals() })`; thread an `onOpenSignals: () -> Unit` parameter from the NavGraph the same way `ReportsScreen(onOpenReport=...)` is threaded.
 
-- [ ] **Step 5: Build** `.\gradlew.bat assembleDebug` → BUILD SUCCESSFUL. **Commit** `feat(android): SIGNALS detail screen behind the COND/MoodTrace region`
+- [x] **Step 5: Build** `.\gradlew.bat assembleDebug` → BUILD SUCCESSFUL. **Commit** `feat(android): SIGNALS detail screen behind the COND/MoodTrace region`
 
 ---
 
 ### Task 6: Full verification + rollout
 
-- [ ] **Step 1:** Backend full suite → 88 passed. Android `assembleDebug` → BUILD SUCCESSFUL.
+- [x] **Step 1:** Backend full suite → 88 passed. Android `assembleDebug` → BUILD SUCCESSFUL.
 - [ ] **Step 2 (manual, post-merge):** droplet `git pull` + compose up; user sets `CALENDAR_ICS_URL` in `/srv/crux/backend-fastapi/.env` (+ compose up again); verify `GET /quote/today` and `/calendar/upcoming`; build + `adb install -r` the APK; verify on phone: GATE gone, AGENDA (after ICS config), quote line, SIGNALS screen opens from the top region.
 
 ## Verification summary

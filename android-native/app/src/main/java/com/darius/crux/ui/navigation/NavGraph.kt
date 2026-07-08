@@ -59,7 +59,9 @@ fun NavGraph() {
             modifier = Modifier.padding(padding),
         ) {
             composable("dashboard") {
-                DashboardScreen(onOpenSignals = { nav.navigate("signals") })
+                DashboardScreen(onOpenSignals = {
+                    nav.navigate("signals") { launchSingleTop = true }
+                })
             }
             composable("chat") { ChatScreen() }
             composable("reports") {
@@ -88,7 +90,8 @@ private fun BezelNav(nav: NavHostController) {
         Row(Modifier.fillMaxWidth()) {
             DESTS.forEach { dest ->
                 val selected = currentRoute == dest.route ||
-                    (dest.route == "reports" && currentRoute?.startsWith("reports/") == true)
+                    (dest.route == "reports" && currentRoute?.startsWith("reports/") == true) ||
+                    (dest.route == "dashboard" && currentRoute == "signals")
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier
