@@ -38,4 +38,10 @@ interface CruxApi {
 
     @POST("devices")
     suspend fun registerDevice(@Body body: DeviceRegisterDTO): Response<Unit>
+
+    @GET("calendar/upcoming")
+    suspend fun getUpcomingEvents(@Query("limit") limit: Int = 2): Response<List<UpcomingEventDTO>>
+
+    @GET("quote/today")
+    suspend fun getQuoteToday(): Response<QuoteDTO>
 }

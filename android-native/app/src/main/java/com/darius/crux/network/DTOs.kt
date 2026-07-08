@@ -98,3 +98,15 @@ fun ChatMessageDTO.toModel() = ChatMessage(
 // ---- Devices (step 7) ----
 
 data class DeviceRegisterDTO(val token: String, val platform: String = "android")
+
+// ---- Dashboard v2: AGENDA + QUOTE ----
+
+data class UpcomingEventDTO(
+    val start: String,
+    val end: String,
+    val subject: String?,
+    val attendee_count: Int?,
+    val is_recurring: Boolean,
+)
+
+data class QuoteDTO(val day: String, val text: String, val source: String)
