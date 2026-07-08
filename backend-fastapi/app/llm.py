@@ -59,3 +59,32 @@ def _anthropic_complete(s, system, messages, max_tokens):
         messages=messages,
     )
     return "".join(block.text for block in resp.content if block.type == "text")
+
+
+def stream(system: str, messages: list[dict], max_tokens: int = 1000):
+    """Yield text deltas from the configured provider."""
+    s = get_settings()
+    if s.llm_provider == "anthropic":
+        yield from _anthropic_stream(s, system, messages, max_tokens)
+    else:
+        yield from _openrouter_stream(s, system, messages, max_tokens)
+
+
+def _openrouter_stream(s, system, messages, max_tokens):
+    client = _openai_client(s)
+    resp = client.chat.completions.create(
+        model=s.openrouter_model, max_tokens=max_tokens, stream=True,
+        messages=[{"role": "system", "content": system}, *messages],
+    )
+    for chunk in resp:
+        if chunk.choices and chunk.choices[0].delta.content:
+            yield chunk.choices[0].delta.content
+
+
+def _anthropic_stream(s, system, messages, max_tokens):
+    import anthropic
+
+    client = anthropic.Anthropic(api_key=s.anthropic_api_key)
+    with client.messages.stream(model=s.anthropic_model, max_tokens=max_tokens,
+                                system=system, messages=messages) as stream:
+        yield from stream.text_stream

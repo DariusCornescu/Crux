@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 HISTORY_TURNS = 10  # prior messages handed to Claude
 
 SYSTEM_PROMPT = """You are Crux's chat analyst — the on-demand counterpart of
-its weekly reports. One athlete: former national 60m champion (PB 6.91),
+its weekly reports. One athlete: former national 60m champion,
 rebuilding an aerobic base, preparing for mountaineering. Three physiological
 modes, always treated distinctly: explosive (sprint/anaerobic), aerobic
 (endurance), loaded (ruck/hike under load).
@@ -152,3 +152,52 @@ def send_message(db: Session, message: str) -> str:
     db.add(ChatMessage(role="assistant", content=reply))
     db.commit()
     return reply
+
+
+def stream_message(db: Session, message: str):
+    """Yield reply tokens; persist both turns even if the consumer disconnects."""
+    parts: list[str] = []
+    persisted_user = False
+    try:
+        history = list(reversed(db.scalars(
+            select(ChatMessage).order_by(ChatMessage.created_at.desc()).limit(HISTORY_TURNS)
+        ).all()))
+        db.add(ChatMessage(role="user", content=message))
+        db.commit()
+        persisted_user = True
+        context = build_context(db)
+        # Read the ORM rows BEFORE the rollback: rollback expires them, and a
+        # later attribute access would refresh + autobegin a new transaction.
+        msgs = [{"role": "user" if m.role == "user" else "assistant", "content": m.content}
+                for m in history] + [{"role": "user", "content": message}]
+        # release the connection during the (long) LLM wait — no idle-in-transaction
+        db.rollback()
+
+        if llm.is_configured():
+            try:
+                for token in llm.stream(system=SYSTEM_PROMPT + json.dumps(context),
+                                        messages=msgs, max_tokens=1000):
+                    parts.append(token)
+                    yield token
+            except Exception as e:
+                logger.error("Claude stream failed: %s", e)
+                tail = " — SIGNAL LOST" if parts else f"SIGNAL LOST — Claude call failed ({e})."
+                parts.append(tail)
+                yield tail
+        else:
+            fallback = _fallback_reply(context)
+            parts.append(fallback)
+            yield fallback
+    except GeneratorExit:
+        if parts:
+            parts.append(" — [interrupted]")
+        raise
+    except Exception as e:  # context assembly failed before/without streaming
+        logger.error("chat stream setup failed: %s", e)
+        tail = f"SIGNAL LOST — {e}"
+        parts.append(tail)
+        yield tail
+    finally:
+        if parts and persisted_user:
+            db.add(ChatMessage(role="assistant", content="".join(parts)))
+            db.commit()

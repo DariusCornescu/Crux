@@ -78,3 +78,25 @@ def test_complete_dispatches_to_anthropic(monkeypatch):
                         lambda s, system, messages, max_tokens: "from anthropic")
     out = llm.complete("SYS", [{"role": "user", "content": "hi"}])
     assert out == "from anthropic"
+
+
+def test_stream_relays_openrouter_deltas(monkeypatch):
+    from app import llm
+
+    class _Delta:
+        def __init__(self, c): self.content = c
+    class _Choice:
+        def __init__(self, c): self.delta = _Delta(c)
+    class _Chunk:
+        def __init__(self, c): self.choices = [_Choice(c)]
+    class _Completions:
+        def create(self, **kw):
+            assert kw.get("stream") is True
+            return iter([_Chunk("Hel"), _Chunk(None), _Chunk("lo")])
+    class _Chat:
+        completions = _Completions()
+    class _Client:
+        chat = _Chat()
+    monkeypatch.setattr(llm, "_openai_client", lambda s: _Client())
+    out = list(llm.stream(system="s", messages=[{"role": "user", "content": "x"}]))
+    assert "".join(out) == "Hello"

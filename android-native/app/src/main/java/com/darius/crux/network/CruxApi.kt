@@ -2,6 +2,7 @@ package com.darius.crux.network
 
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -21,6 +22,9 @@ interface CruxApi {
     @POST("reports/generate")
     suspend fun generateReport(): Response<ReportDTO>
 
+    @GET("reports/{id}/metrics")
+    suspend fun getReportMetrics(@Path("id") id: Int): Response<ReportMetricsDTO>
+
     @GET("integrations/status")
     suspend fun getIntegrationsStatus(): Response<IntegrationsStatusDTO>
 
@@ -35,6 +39,9 @@ interface CruxApi {
 
     @POST("chat")
     suspend fun sendChatMessage(@Body body: ChatRequestDTO): Response<ChatReplyDTO>
+
+    @DELETE("chat/history")
+    suspend fun clearChatHistory(): Response<Unit>
 
     @POST("devices")
     suspend fun registerDevice(@Body body: DeviceRegisterDTO): Response<Unit>

@@ -56,3 +56,26 @@ def test_week_summary_includes_subjective_block(client, db):
     # Fallback report mentions the subjective data
     report = client.post("/reports/generate", json={}).json()
     assert "Subjective" in report["body_md"]
+
+
+def test_report_metrics_shape_and_days(client, db):
+    # generate() with no week_start defaults to the last FULL Monday-Sunday
+    # week (see report_generator.week_bounds), not the current in-progress
+    # week — so the activity must land inside that previous week for the
+    # km assertion below to be deterministic.
+    monday = date.today() - timedelta(days=date.today().weekday() + 7)
+    activity_time = datetime.combine(
+        monday, datetime.min.time(), tzinfo=timezone.utc) + timedelta(days=1, hours=9)
+    client.post("/activities", json={
+        "type": "easy_run", "start_time": activity_time.isoformat(),
+        "duration_s": 2400, "distance_m": 8000})
+    client.post("/reports/generate", json={})
+    rep = client.get("/reports").json()[0]
+
+    r = client.get(f"/reports/{rep['id']}/metrics")
+    assert r.status_code == 200
+    days = r.json()["days"]
+    assert len(days) == 7
+    assert set(days[0]) >= {"day", "km", "vert_m", "mood_valence", "sessions"}
+    assert any(abs(d["km"] - 8.0) < 1e-6 for d in days)
+    assert client.get("/reports/9999/metrics").status_code == 404

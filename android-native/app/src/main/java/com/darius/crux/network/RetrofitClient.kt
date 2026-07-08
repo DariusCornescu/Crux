@@ -16,7 +16,10 @@ object RetrofitClient {
         level = HttpLoggingInterceptor.Level.BASIC
     }
 
-    private val okHttpClient = OkHttpClient.Builder()
+    // Exposed (not private) so callers needing non-default timeouts — e.g. the chat
+    // SSE stream — can derive a client via okHttpClient.newBuilder() instead of
+    // duplicating the interceptor/timeout setup.
+    val okHttpClient: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)

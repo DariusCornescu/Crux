@@ -59,3 +59,62 @@ def test_recent_listening_ignores_window_and_orders_newest_first(db):
 
     tracks = [t["track"] for t in chat_service.build_context(db)["recent_listening"]]
     assert tracks == ["New Song", "Old Song"]  # newest first, old row still present
+
+
+def test_clear_history(client):
+    client.post("/chat", json={"message": "hello"})
+    r = client.delete("/chat/history")
+    assert r.status_code == 200 and r.json()["deleted"] == 2
+    assert client.get("/chat/history").json() == []
+    assert client.delete("/chat/history").json()["deleted"] == 0
+
+
+def test_chat_stream_offline_sse(client):
+    with client.stream("POST", "/chat/stream", json={"message": "km this week?"}) as r:
+        assert r.status_code == 200
+        assert r.headers["content-type"].startswith("text/event-stream")
+        lines = [ln for ln in r.iter_lines() if ln]
+    assert lines[-1] == "data: [DONE]"
+    import json as _json
+    tokens = [_json.loads(ln[6:])["t"] for ln in lines[:-1] if ln.startswith("data: ")]
+    assert "OFFLINE MODE" in "".join(tokens)
+    history = client.get("/chat/history").json()
+    assert [m["role"] for m in history] == ["user", "assistant"]
+    assert "OFFLINE MODE" in history[-1]["content"]
+
+
+def test_chat_stream_midfailure_persists_partial(client, monkeypatch):
+    from app import chat_service
+
+    def fake_stream(**k):
+        yield "Half"
+        raise RuntimeError("provider died")
+    monkeypatch.setattr(chat_service.llm, "is_configured", lambda: True)
+    monkeypatch.setattr(chat_service.llm, "stream", fake_stream)
+
+    with client.stream("POST", "/chat/stream", json={"message": "q"}) as r:
+        lines = [ln for ln in r.iter_lines() if ln]
+    assert lines[-1] == "data: [DONE]"
+    history = client.get("/chat/history").json()
+    assert history[-1]["role"] == "assistant"
+    assert history[-1]["content"].startswith("Half") and "SIGNAL LOST" in history[-1]["content"]
+
+
+def test_stream_message_persists_on_generator_close(db, monkeypatch):
+    from app import chat_service
+    from app.models import ChatMessage
+
+    def fake_stream(**k):
+        yield "Tok1"
+        yield "Tok2"
+        yield "Tok3"
+    monkeypatch.setattr(chat_service.llm, "is_configured", lambda: True)
+    monkeypatch.setattr(chat_service.llm, "stream", fake_stream)
+
+    gen = chat_service.stream_message(db, "q")
+    assert next(gen) == "Tok1"
+    gen.close()  # simulates client disconnect (GeneratorExit)
+
+    rows = db.query(ChatMessage).order_by(ChatMessage.id).all()
+    assert [r.role for r in rows] == ["user", "assistant"]
+    assert rows[-1].content == "Tok1 — [interrupted]"

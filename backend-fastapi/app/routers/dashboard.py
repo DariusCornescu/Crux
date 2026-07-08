@@ -54,7 +54,7 @@ def _demo(week_start: date) -> DashboardOut:
             RailEntry(day=week_start + timedelta(days=6), mode=EffortMode.loaded,
                       type=ActivityType.hike, duration_s=7200, vert_m=410),
         ],
-        gate=GateBlock(best_split=6.98, pb=6.91, session_note="60m fly ×3 · rest 8' · RPE 8",
+        gate=GateBlock(best_split=6.98, session_note="60m fly ×3 · rest 8' · RPE 8",
                        splits=[7.04, 6.98, 7.02]),
         strip=StripBlock(week_km=26.2, long_run_km=14.0, z2_pct=74,
                          pace_trend=[334, 331, 328, 330, 326, 329, 336, 332, 330, 327, 331, 335, 338, 341]),
