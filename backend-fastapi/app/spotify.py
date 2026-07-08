@@ -98,7 +98,7 @@ def _fetch_audio_features(track_ids: list[str]) -> dict[str, dict]:
             if resp.status_code != 200:
                 logger.warning("ReccoBeats audio-features unavailable (HTTP %d)", resp.status_code)
                 continue
-            items = resp.json().get("content", [])
+            items = resp.json().get("content") or []
         except (httpx.HTTPError, ValueError, AttributeError) as e:
             logger.warning("ReccoBeats fetch failed: %s", e)
             continue
@@ -134,6 +134,7 @@ def sync_recently_played(db: Session, limit: int = 50) -> int:
             played_at=played_at,
             track_name=track.get("name") or "unknown",
             artist=", ".join(a.get("name", "") for a in track.get("artists", [])) or None,
+            spotify_track_id=track.get("id"),
         )
         db.add(row)
         new_rows.append((row, track.get("id") or ""))

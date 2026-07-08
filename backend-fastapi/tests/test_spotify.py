@@ -88,3 +88,21 @@ def test_fetch_audio_features_survives_malformed_200(monkeypatch):
             raise ValueError("not json")
     monkeypatch.setattr(spotify.httpx, "get", lambda *a, **k: BadJson())
     assert spotify._fetch_audio_features(["t1"]) == {}
+
+
+def test_sync_stores_spotify_track_id(db, monkeypatch):
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT10:00:00Z")
+    monkeypatch.setattr(spotify.httpx, "post", lambda *a, **k: FakeResponse(TOKEN_PAYLOAD))
+
+    def fake_get(url, **kwargs):
+        if "recently-played" in url:
+            return FakeResponse(_recent(now_iso))
+        return FakeResponse({"content": []})
+
+    monkeypatch.setattr(spotify.httpx, "get", fake_get)
+
+    spotify.exchange_code(db, "authcode")
+    spotify.sync_recently_played(db)
+
+    ids = {r.track_name: r.spotify_track_id for r in db.query(ListeningSession).all()}
+    assert ids == {"Song A": "trk1", "Song B": "trk2"}
