@@ -289,7 +289,7 @@ Register in `app/main.py` like the others.
 - Create: `backend-fastapi/app/routers/signals.py`; Modify: `app/schemas.py`, `app/main.py`
 - Test: create `backend-fastapi/tests/test_signals.py`
 
-- [ ] **Step 1: Failing test** — `tests/test_signals.py`:
+- [x] **Step 1: Failing test** — `tests/test_signals.py`:
 ```python
 from datetime import datetime, timedelta, timezone
 
@@ -315,9 +315,9 @@ def test_signals_detail_shape_and_order(client, db):
     assert daily[0]["sleep_min"] == 432 and daily[0]["resting_hr"] == 52
 ```
 
-- [ ] **Step 2: Run → FAIL** (404).
+- [x] **Step 2: Run → FAIL** (404).
 
-- [ ] **Step 3: Schemas** (`app/schemas.py`):
+- [x] **Step 3: Schemas** (`app/schemas.py`):
 ```python
 class SignalTrack(BaseModel):
     played_at: datetime
@@ -341,7 +341,7 @@ class SignalsOut(BaseModel):
     daily: list[SignalDay]
 ```
 
-- [ ] **Step 4: Router** `app/routers/signals.py`:
+- [x] **Step 4: Router** `app/routers/signals.py`:
 ```python
 """Detail payload behind the Dashboard's tappable COND/MoodTrace region."""
 from fastapi import APIRouter, Depends
@@ -371,7 +371,10 @@ def detail(db: Session = Depends(get_db)):
 ```
 Register in `app/main.py`.
 
-- [ ] **Step 5: Run** full suite → 88 passed. **Commit** `feat: GET /signals/detail (recent tracks + 14-day conditions)`
+- [x] **Step 5: Run** full suite → 88 passed (plan baseline); actual 90 passed including the
+Task 2 code-review ride-along (`test_quote_llm_branch_and_failure_fallback`,
+`test_quote_llm_failure_falls_back_static` added to `tests/test_quote.py`: 87 + 1 signals
++ 2 quote ride-along = 90). **Commit** `feat: GET /signals/detail (recent tracks + 14-day conditions)`
 
 ---
 

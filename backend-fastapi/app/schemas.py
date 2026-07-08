@@ -158,6 +158,30 @@ class UpcomingEvent(BaseModel):
     is_recurring: bool = False
 
 
+# ---- Signals detail (tappable COND/MoodTrace region) ----
+
+class SignalTrack(BaseModel):
+    played_at: datetime
+    track: str
+    artist: str | None = None
+    valence: float | None = None
+    energy: float | None = None
+
+
+class SignalDay(BaseModel):
+    day: date
+    sleep_min: int | None = None
+    sleep_score: float | None = None
+    resting_hr: int | None = None
+    mood_valence: float | None = None
+    mood_energy: float | None = None
+
+
+class SignalsOut(BaseModel):
+    recent_tracks: list[SignalTrack]
+    daily: list[SignalDay]
+
+
 # ---- Dashboard payload: one block per instrument ----
 
 class Conditions(BaseModel):
