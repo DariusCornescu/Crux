@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import calendar_sync, spotify, strava
+from app import calendar_sync, genres, spotify, strava
 from app.config import get_settings
 from app.database import get_db
 from app.models import OAuthToken
@@ -123,6 +123,11 @@ def spotify_sync(db: Session = Depends(get_db)):
 @router.post("/spotify/backfill", response_model=SyncResult)
 def spotify_backfill(db: Session = Depends(get_db)):
     return SyncResult(synced=spotify.backfill_audio_features(db))
+
+
+@router.post("/spotify/genres", response_model=SyncResult)
+def spotify_genres(db: Session = Depends(get_db)):
+    return SyncResult(synced=genres.infer_pending(db))
 
 
 # ---- Work calendar (published ICS feed — see calendar_sync.py) ----
