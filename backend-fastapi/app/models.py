@@ -199,3 +199,12 @@ class DailyQuote(Base):
     day: Mapped[date] = mapped_column(Date, unique=True, index=True)
     text: Mapped[str] = mapped_column(Text)
     source: Mapped[str] = mapped_column(String(8), default="static")  # llm | static
+
+
+class DailyMood(Base):
+    __tablename__ = "daily_moods"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    day: Mapped[date] = mapped_column(Date, unique=True, index=True)
+    phrase: Mapped[str] = mapped_column(String(64))
+    source: Mapped[str] = mapped_column(String(8), default="fallback")  # llm | fallback

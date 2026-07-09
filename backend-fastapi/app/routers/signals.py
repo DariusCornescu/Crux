@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import mood
 from app.database import get_db
 from app.models import DailySummary, ListeningSession
 from app.schemas import SignalDay, SignalsOut, SignalTrack
@@ -22,4 +23,5 @@ def detail(db: Session = Depends(get_db)):
         daily=[SignalDay(day=d.day, sleep_min=d.sleep_duration_min, sleep_score=d.sleep_score,
                          resting_hr=d.resting_hr, mood_valence=d.mood_valence,
                          mood_energy=d.mood_energy) for d in days],
+        current_mood=mood.get_current(db).phrase,
     )

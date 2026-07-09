@@ -192,6 +192,7 @@ class SignalDay(BaseModel):
 class SignalsOut(BaseModel):
     recent_tracks: list[SignalTrack]
     daily: list[SignalDay]
+    current_mood: str | None = None
 
 
 # ---- Dashboard payload: one block per instrument ----

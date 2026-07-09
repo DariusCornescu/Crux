@@ -52,6 +52,9 @@ interface CruxApi {
     @GET("quote/today")
     suspend fun getQuoteToday(): Response<QuoteDTO>
 
+    @GET("mood/current")
+    suspend fun getMoodCurrent(): Response<MoodDTO>
+
     @GET("signals/detail")
     suspend fun getSignalsDetail(): Response<SignalsDTO>
 }
