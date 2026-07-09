@@ -135,6 +135,7 @@ data class SignalDayDTO(
 data class SignalsDTO(
     val recent_tracks: List<SignalTrackDTO>,
     val daily: List<SignalDayDTO>,
+    val current_mood: String? = null,
 )
 
 // ---- Report detail: WEEK IN NUMBERS mini-charts (chat-graphs, step 5) ----

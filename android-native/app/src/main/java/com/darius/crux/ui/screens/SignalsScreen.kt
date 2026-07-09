@@ -76,6 +76,14 @@ fun SignalsScreen(
                 ErrorStrip(uiState.error ?: "NO SIGNAL", onRetry = viewModel::load)
             uiState.data != null -> {
                 val data = uiState.data!!
+                data.current_mood?.let { phrase ->
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp)) {
+                        Text("MOOD", style = MaterialTheme.typography.labelSmall.copy(color = GateRed))
+                        Spacer(Modifier.height(6.dp))
+                        Text(phrase, style = MaterialTheme.typography.titleSmall.copy(color = Ink))
+                    }
+                    HairlineRule()
+                }
                 ListeningSection(data.recent_tracks)
                 HairlineRule()
                 ConditionsSection(data.daily)
@@ -156,7 +164,6 @@ private fun ConditionsSection(days: List<SignalDayDTO>) {
             Text("DAY", style = MaterialTheme.typography.labelSmall.copy(color = Graphite), modifier = Modifier.weight(1f))
             Text("SLEEP", style = MaterialTheme.typography.labelSmall.copy(color = Graphite), modifier = Modifier.weight(1f))
             Text("RHR", style = MaterialTheme.typography.labelSmall.copy(color = Graphite), modifier = Modifier.weight(1f))
-            Text("MOOD", style = MaterialTheme.typography.labelSmall.copy(color = Graphite), modifier = Modifier.weight(1f))
         }
         Spacer(Modifier.height(6.dp))
 
@@ -172,12 +179,10 @@ private fun DayRow(day: SignalDayDTO) {
         .getOrDefault(day.day)
     val sleep = day.sleep_min?.let { "${it / 60}:${String.format(Locale.US, "%02d", it % 60)}" } ?: "--"
     val rhr = day.resting_hr?.toString() ?: "--"
-    val mood = day.mood_valence?.let { String.format(Locale.US, "▲%.2f", it) } ?: "--"
 
     Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Text(label, style = MaterialTheme.typography.labelMedium.copy(color = Ink), modifier = Modifier.weight(1f))
         Text(sleep, style = MaterialTheme.typography.labelMedium.copy(color = Ink), modifier = Modifier.weight(1f))
         Text(rhr, style = MaterialTheme.typography.labelMedium.copy(color = Ink), modifier = Modifier.weight(1f))
-        Text(mood, style = MaterialTheme.typography.labelMedium.copy(color = Ink), modifier = Modifier.weight(1f))
     }
 }
