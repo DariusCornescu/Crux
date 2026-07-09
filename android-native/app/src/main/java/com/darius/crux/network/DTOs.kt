@@ -111,6 +111,8 @@ data class UpcomingEventDTO(
 
 data class QuoteDTO(val day: String, val text: String, val source: String)
 
+data class MoodDTO(val day: String, val phrase: String, val source: String)
+
 // ---- Dashboard v2: SIGNALS detail (behind the tappable COND/MoodTrace region) ----
 
 data class SignalTrackDTO(

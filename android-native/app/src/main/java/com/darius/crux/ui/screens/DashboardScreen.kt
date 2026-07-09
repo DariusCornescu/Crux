@@ -32,7 +32,6 @@ import com.darius.crux.ui.components.AltiInstrument
 import com.darius.crux.ui.components.ErrorStrip
 import com.darius.crux.ui.components.HairlineRule
 import com.darius.crux.ui.components.LoadingStrip
-import com.darius.crux.ui.components.MoodTrace
 import com.darius.crux.ui.components.RailTape
 import com.darius.crux.ui.components.StripInstrument
 import com.darius.crux.ui.theme.GateRed
@@ -45,10 +44,20 @@ fun DashboardScreen(onOpenSignals: () -> Unit = {}, viewModel: DashboardViewMode
     val uiState by viewModel.uiState.collectAsState()
     val agenda by viewModel.agenda.collectAsState()
     val quote by viewModel.quote.collectAsState()
+    val mood by viewModel.mood.collectAsState()
     var expandedAgendaIndex by remember { mutableStateOf<Int?>(null) }
 
     Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         BezelHeader(week = uiState.data?.week, isDemo = uiState.data?.isDemo == true)
+
+        quote?.let {
+            HairlineRule()
+            Text(
+                it,
+                style = MaterialTheme.typography.bodyMedium.copy(color = Graphite, textAlign = TextAlign.Center),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+            )
+        }
 
         when {
             uiState.isLoading && uiState.data == null -> LoadingStrip()
@@ -61,7 +70,7 @@ fun DashboardScreen(onOpenSignals: () -> Unit = {}, viewModel: DashboardViewMode
                 onToggleAgenda = { index ->
                     expandedAgendaIndex = if (expandedAgendaIndex == index) null else index
                 },
-                quote = quote,
+                moodPhrase = mood,
                 onOpenSignals = onOpenSignals,
             )
         }
@@ -76,15 +85,11 @@ private fun DashboardBody(
     agenda: List<UpcomingEventDTO>?,
     expandedAgendaIndex: Int?,
     onToggleAgenda: (Int) -> Unit,
-    quote: String?,
+    moodPhrase: String?,
     onOpenSignals: () -> Unit,
 ) {
     Column(Modifier.fillMaxWidth().clickable(onClick = onOpenSignals)) {
-        ConditionsStrip(data.conditions)
-        if (data.moodTrend.any { it != null }) {
-            MoodTrace(data.moodTrend, Modifier.padding(horizontal = 20.dp))
-            Spacer(Modifier.height(10.dp))
-        }
+        ConditionsStrip(data.conditions, moodPhrase)
     }
     HairlineRule()
 
@@ -105,18 +110,6 @@ private fun DashboardBody(
     HairlineRule()
 
     AltiInstrument(data.alti)
-
-    if (quote != null) {
-        HairlineRule()
-        Text(
-            quote,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                color = Graphite,
-                textAlign = TextAlign.Center,
-            ),
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
-        )
-    }
 }
 
 @Composable
@@ -144,10 +137,10 @@ private fun BezelHeader(week: Int?, isDemo: Boolean) {
 }
 
 @Composable
-private fun ConditionsStrip(c: Conditions) {
+private fun ConditionsStrip(c: Conditions, moodPhrase: String?) {
     val sleep = c.sleepMin?.let { "${it / 60}:${String.format(Locale.US, "%02d", it % 60)}" } ?: "--"
     val rhr = c.restingHr?.toString() ?: "--"
-    val mood = c.moodValence?.let { String.format(Locale.US, "▲%.2f", it) } ?: "--"
+    val mood = moodPhrase ?: "…"
 
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 10.dp),

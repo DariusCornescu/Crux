@@ -31,15 +31,19 @@ class DashboardViewModel : ViewModel() {
     private val _quote = MutableStateFlow<String?>(null)
     val quote: StateFlow<String?> = _quote.asStateFlow()
 
+    private val _mood = MutableStateFlow<String?>(null)
+    val mood: StateFlow<String?> = _mood.asStateFlow()
+
     init {
         load()
     }
 
     fun load() {
-        // RETRY re-enters here — refresh agenda/quote too (idempotent, non-blocking),
+        // RETRY re-enters here — refresh agenda/quote/mood too (idempotent, non-blocking),
         // otherwise a failed offline start would leave them null forever.
         loadAgenda()
         loadQuote()
+        loadMood()
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             when (val result = repository.getDashboard()) {
@@ -69,6 +73,19 @@ class DashboardViewModel : ViewModel() {
             _quote.value = try {
                 when (val result = repository.getQuoteToday()) {
                     is RepoResult.Success -> result.data.text
+                    is RepoResult.Error -> null
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    private fun loadMood() {
+        viewModelScope.launch {
+            _mood.value = try {
+                when (val result = repository.getMoodCurrent()) {
+                    is RepoResult.Success -> result.data.phrase
                     is RepoResult.Error -> null
                 }
             } catch (e: Exception) {
