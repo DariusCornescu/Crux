@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.darius.crux.network.SignalDayDTO
 import com.darius.crux.network.SignalTrackDTO
 import com.darius.crux.ui.components.ErrorStrip
+import com.darius.crux.ui.components.GenreBars
 import com.darius.crux.ui.components.HairlineRule
 import com.darius.crux.ui.components.LoadingStrip
 import com.darius.crux.ui.theme.GateRed
@@ -85,6 +86,10 @@ fun SignalsScreen(
                     HairlineRule()
                 }
                 ListeningSection(data.recent_tracks)
+                if (data.genres.isNotEmpty()) {
+                    HairlineRule()
+                    GenreBars(data.genres)
+                }
                 HairlineRule()
                 ConditionsSection(data.daily)
             }

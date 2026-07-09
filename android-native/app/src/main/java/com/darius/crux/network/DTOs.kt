@@ -132,10 +132,13 @@ data class SignalDayDTO(
     val mood_energy: Double?,
 )
 
+data class GenreCountDTO(val genre: String, val count: Int)
+
 data class SignalsDTO(
     val recent_tracks: List<SignalTrackDTO>,
     val daily: List<SignalDayDTO>,
     val current_mood: String? = null,
+    val genres: List<GenreCountDTO> = emptyList(),
 )
 
 // ---- Report detail: WEEK IN NUMBERS mini-charts (chat-graphs, step 5) ----

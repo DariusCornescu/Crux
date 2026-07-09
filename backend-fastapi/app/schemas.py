@@ -189,10 +189,16 @@ class SignalDay(BaseModel):
     mood_energy: float | None = None
 
 
+class GenreCount(BaseModel):
+    genre: str
+    count: int
+
+
 class SignalsOut(BaseModel):
     recent_tracks: list[SignalTrack]
     daily: list[SignalDay]
     current_mood: str | None = None
+    genres: list[GenreCount] = []
 
 
 # ---- Dashboard payload: one block per instrument ----

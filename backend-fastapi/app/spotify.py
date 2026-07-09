@@ -15,6 +15,7 @@ import httpx
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import genres
 from app.config import get_settings
 from app.models import DailySummary, ListeningSession, OAuthToken
 
@@ -161,6 +162,10 @@ def sync_recently_played(db: Session, limit: int = 50) -> int:
     db.commit()
 
     aggregate_daily_mood(db)
+    try:
+        genres.infer_pending(db)
+    except Exception as e:  # never let genre labelling break a sync
+        logger.warning("genre inference skipped: %s", e)
     logger.info("Spotify sync: %d new listening sessions", len(new_rows))
     return len(new_rows)
 
