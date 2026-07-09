@@ -12,7 +12,11 @@ from app.models import ListeningSession
 
 logger = logging.getLogger(__name__)
 
-BATCH = 50
+# Small batch + generous token budget: the OpenRouter model spends a large
+# hidden reasoning budget, and a tight max_tokens makes it return EMPTY content
+# (not truncated) — 20 tracks / 1500 tokens reliably yields one line per track.
+BATCH = 20
+LLM_MAX_TOKENS = 1500
 _LINE = re.compile(r"^\s*(\d+)\s*[.):\-]?\s*(.+?)\s*$")
 
 SYSTEM = """You label music tracks with their specific sub-genre. For each
@@ -28,7 +32,7 @@ def infer_pending(db: Session, limit: int = BATCH) -> int:
     rows = list(db.scalars(
         select(ListeningSession)
         .where(ListeningSession.genre.is_(None))
-        .order_by(ListeningSession.id)
+        .order_by(ListeningSession.played_at.desc())  # newest first — fills the last-30 chart set first
         .limit(limit)
     ).all())
     if not rows or not llm.is_configured():
@@ -38,7 +42,7 @@ def infer_pending(db: Session, limit: int = BATCH) -> int:
     try:
         reply = llm.complete(system=SYSTEM,
                              messages=[{"role": "user", "content": listing}],
-                             max_tokens=400)
+                             max_tokens=LLM_MAX_TOKENS)
     except Exception as e:
         logger.warning("genre inference failed: %s", e)
         return 0
