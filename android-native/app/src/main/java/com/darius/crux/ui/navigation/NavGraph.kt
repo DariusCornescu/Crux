@@ -29,6 +29,8 @@ import androidx.navigation.navArgument
 import com.darius.crux.ui.components.HairlineRule
 import com.darius.crux.ui.screens.ChatScreen
 import com.darius.crux.ui.screens.DashboardScreen
+import com.darius.crux.ui.screens.MeetingsScreen
+import com.darius.crux.ui.screens.PhilosophyScreen
 import com.darius.crux.ui.screens.ReportDetailScreen
 import com.darius.crux.ui.screens.ReportsScreen
 import com.darius.crux.ui.screens.SettingsScreen
@@ -59,9 +61,11 @@ fun NavGraph() {
             modifier = Modifier.padding(padding),
         ) {
             composable("dashboard") {
-                DashboardScreen(onOpenSignals = {
-                    nav.navigate("signals") { launchSingleTop = true }
-                })
+                DashboardScreen(
+                    onOpenSignals = { nav.navigate("signals") { launchSingleTop = true } },
+                    onOpenPhilosophy = { nav.navigate("philosophy") { launchSingleTop = true } },
+                    onOpenMeetings = { nav.navigate("meetings") { launchSingleTop = true } },
+                )
             }
             composable("chat") { ChatScreen() }
             composable("reports") {
@@ -74,6 +78,8 @@ fun NavGraph() {
                 ReportDetailScreen(onBack = { nav.popBackStack() })
             }
             composable("signals") { SignalsScreen(onBack = { nav.popBackStack() }) }
+            composable("philosophy") { PhilosophyScreen(onBack = { nav.popBackStack() }) }
+            composable("meetings") { MeetingsScreen(onBack = { nav.popBackStack() }) }
             composable("settings") { SettingsScreen() }
         }
     }
@@ -91,7 +97,7 @@ private fun BezelNav(nav: NavHostController) {
             DESTS.forEach { dest ->
                 val selected = currentRoute == dest.route ||
                     (dest.route == "reports" && currentRoute?.startsWith("reports/") == true) ||
-                    (dest.route == "dashboard" && currentRoute == "signals")
+                    (dest.route == "dashboard" && currentRoute in setOf("signals", "philosophy", "meetings"))
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier

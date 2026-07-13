@@ -30,5 +30,16 @@ celery_app.conf.beat_schedule["wellness-rollup"] = {
     "task": "app.workers.tasks.wellness_rollup",
     "schedule": crontab(hour=4, minute=30),
 }
+# Pre-generate the day's quote + reflection before the user wakes, so the app
+# never blocks on a cold first-of-day LLM call (which used to blow the client's
+# 30s timeout and silently drop the quote). Runs just after wellness-rollup.
+celery_app.conf.beat_schedule["prewarm-philosophy"] = {
+    "task": "app.workers.tasks.prewarm_philosophy",
+    "schedule": crontab(hour=4, minute=45),
+}
+celery_app.conf.beat_schedule["sync-github"] = {
+    "task": "app.workers.tasks.sync_github",
+    "schedule": crontab(minute=25),  # hourly, offset from calendar's :15
+}
 
 celery_app.autodiscover_tasks(["app.workers"])

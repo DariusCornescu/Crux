@@ -10,7 +10,7 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import calendar_sync, genres, spotify, strava
+from app import calendar_sync, genres, github, spotify, strava
 from app.config import get_settings
 from app.database import get_db
 from app.models import OAuthToken
@@ -45,10 +45,18 @@ def _calendar_state(db: Session) -> IntegrationState:
                             last_synced_at=state.last_synced_at)
 
 
+def _github_state(db: Session) -> IntegrationState:
+    state = _state(db, github.PROVIDER)
+    username = get_settings().github_username
+    return IntegrationState(connected=bool(username),
+                            athlete_id=username or state.athlete_id,
+                            last_synced_at=state.last_synced_at)
+
+
 @router.get("/status", response_model=IntegrationsStatus)
 def status(db: Session = Depends(get_db)):
     return IntegrationsStatus(strava=_state(db, "strava"), spotify=_state(db, "spotify"),
-                              calendar=_calendar_state(db))
+                              calendar=_calendar_state(db), github=_github_state(db))
 
 
 # ---- Strava ----
@@ -136,5 +144,15 @@ def spotify_genres(db: Session = Depends(get_db)):
 def calendar_sync_now(db: Session = Depends(get_db)):
     try:
         return SyncResult(synced=calendar_sync.sync_ics(db))
+    except RuntimeError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# ---- GitHub (public API / optional PAT — no OAuth; see github.py) ----
+
+@router.post("/github/sync", response_model=SyncResult)
+def github_sync(db: Session = Depends(get_db)):
+    try:
+        return SyncResult(synced=github.sync(db))
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))

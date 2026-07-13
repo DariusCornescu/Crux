@@ -53,7 +53,7 @@ def get_today(db: Session) -> DailyQuote:
         try:
             text = llm.complete(system=SYSTEM,
                                 messages=[{"role": "user", "content": _week_snapshot(db)}],
-                                max_tokens=80).strip().strip('"')
+                                max_tokens=160).strip().strip('"')
             source = "llm"
         except Exception as e:
             logger.warning("quote generation failed, using static: %s", e)

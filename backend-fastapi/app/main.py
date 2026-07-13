@@ -2,8 +2,9 @@ import os
 
 from fastapi import FastAPI
 
-from app.routers import (activities, chat, dashboard, devices, health, insights,
-                         integrations, mood, quote, reports, signals, voice_logs, wellness)
+from app.routers import (activities, chat, dashboard, devices, github, health, insights,
+                         integrations, mood, quote, reflection, reports, signals,
+                         voice_logs, wellness)
 from app.routers import calendar as calendar_router
 
 
@@ -41,5 +42,7 @@ app.include_router(insights.router)
 app.include_router(wellness.router)
 app.include_router(calendar_router.router)
 app.include_router(quote.router)
+app.include_router(reflection.router)
 app.include_router(signals.router)
 app.include_router(mood.router)
+app.include_router(github.router)

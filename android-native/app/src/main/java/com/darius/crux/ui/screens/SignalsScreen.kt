@@ -1,17 +1,12 @@
 package com.darius.crux.ui.screens
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,7 +14,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.darius.crux.network.SignalDayDTO
 import com.darius.crux.network.SignalTrackDTO
@@ -27,9 +21,11 @@ import com.darius.crux.ui.components.ErrorStrip
 import com.darius.crux.ui.components.GenreBars
 import com.darius.crux.ui.components.HairlineRule
 import com.darius.crux.ui.components.LoadingStrip
-import com.darius.crux.ui.theme.GateRed
+import com.darius.crux.ui.components.MeetSheetScreen
+import com.darius.crux.ui.components.SectionHeader
 import com.darius.crux.ui.theme.Graphite
 import com.darius.crux.ui.theme.Ink
+import com.darius.crux.ui.theme.Space
 import com.darius.crux.ui.viewmodel.SignalsViewModel
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -55,22 +51,7 @@ fun SignalsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = 18.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                "← BACK",
-                style = MaterialTheme.typography.titleSmall.copy(color = Graphite),
-                modifier = Modifier.clickable(onClick = onBack),
-            )
-            Text("SIGNALS", style = MaterialTheme.typography.titleSmall)
-        }
-        Spacer(Modifier.height(12.dp))
-        HairlineRule()
-
+    MeetSheetScreen(title = "SIGNALS", onBack = onBack) {
         when {
             uiState.isLoading -> LoadingStrip()
             uiState.error != null ->
@@ -78,9 +59,9 @@ fun SignalsScreen(
             uiState.data != null -> {
                 val data = uiState.data!!
                 data.current_mood?.let { phrase ->
-                    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp)) {
-                        Text("MOOD", style = MaterialTheme.typography.labelSmall.copy(color = GateRed))
-                        Spacer(Modifier.height(6.dp))
+                    Column(Modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.sectionV)) {
+                        SectionHeader("MOOD")
+                        Spacer(Modifier.height(Space.sm))
                         Text(phrase, style = MaterialTheme.typography.titleSmall.copy(color = Ink))
                     }
                     HairlineRule()
@@ -94,7 +75,7 @@ fun SignalsScreen(
                 ConditionsSection(data.daily)
             }
         }
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(Space.xxl))
     }
 }
 
@@ -108,12 +89,9 @@ private fun ListeningSection(tracks: List<SignalTrackDTO>) {
         }.getOrNull()?.let { track to it }
     }
 
-    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp)) {
-        Text(
-            "LISTENING — LAST 30",
-            style = MaterialTheme.typography.labelSmall.copy(color = GateRed),
-        )
-        Spacer(Modifier.height(10.dp))
+    Column(Modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.sectionV)) {
+        SectionHeader("LISTENING — LAST 30")
+        Spacer(Modifier.height(Space.md))
 
         if (parsed.isEmpty()) {
             Text("NO SIGNAL YET", style = MaterialTheme.typography.labelSmall.copy(color = Graphite))
@@ -122,17 +100,17 @@ private fun ListeningSection(tracks: List<SignalTrackDTO>) {
             parsed.forEach { (track, time) ->
                 val day = time.toLocalDate()
                 if (day != lastDay) {
-                    if (lastDay != null) Spacer(Modifier.height(10.dp))
+                    if (lastDay != null) Spacer(Modifier.height(Space.md))
                     Text(
                         "${time.format(WEEKDAY_FMT).uppercase(Locale.US)} · " +
                             "${time.format(MONTH_FMT).uppercase(Locale.US)} ${time.dayOfMonth}",
                         style = MaterialTheme.typography.labelSmall.copy(color = Graphite),
                     )
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(Space.sm))
                     lastDay = day
                 }
                 TrackRow(track, time)
-                Spacer(Modifier.height(6.dp))
+                Spacer(Modifier.height(Space.sm))
             }
         }
     }
@@ -145,7 +123,7 @@ private fun TrackRow(track: SignalTrackDTO, time: ZonedDateTime) {
 
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(time.format(TIME_FMT), style = MaterialTheme.typography.labelMedium.copy(color = Graphite))
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(Space.md))
         Text(
             titleArtist,
             style = MaterialTheme.typography.bodyMedium.copy(color = Ink),
@@ -158,19 +136,16 @@ private fun TrackRow(track: SignalTrackDTO, time: ZonedDateTime) {
 /** CONDITIONS — 14 DAYS: header row + one row per day, kept even when the listening section is empty. */
 @Composable
 private fun ConditionsSection(days: List<SignalDayDTO>) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp)) {
-        Text(
-            "CONDITIONS — 14 DAYS",
-            style = MaterialTheme.typography.labelSmall.copy(color = GateRed),
-        )
-        Spacer(Modifier.height(10.dp))
+    Column(Modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.sectionV)) {
+        SectionHeader("CONDITIONS — 14 DAYS")
+        Spacer(Modifier.height(Space.md))
 
         Row(Modifier.fillMaxWidth()) {
             Text("DAY", style = MaterialTheme.typography.labelSmall.copy(color = Graphite), modifier = Modifier.weight(1f))
             Text("SLEEP", style = MaterialTheme.typography.labelSmall.copy(color = Graphite), modifier = Modifier.weight(1f))
             Text("RHR", style = MaterialTheme.typography.labelSmall.copy(color = Graphite), modifier = Modifier.weight(1f))
         }
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(Space.sm))
 
         days.forEach { day ->
             DayRow(day)
@@ -185,7 +160,7 @@ private fun DayRow(day: SignalDayDTO) {
     val sleep = day.sleep_min?.let { "${it / 60}:${String.format(Locale.US, "%02d", it % 60)}" } ?: "--"
     val rhr = day.resting_hr?.toString() ?: "--"
 
-    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+    Row(Modifier.fillMaxWidth().padding(vertical = Space.xs)) {
         Text(label, style = MaterialTheme.typography.labelMedium.copy(color = Ink), modifier = Modifier.weight(1f))
         Text(sleep, style = MaterialTheme.typography.labelMedium.copy(color = Ink), modifier = Modifier.weight(1f))
         Text(rhr, style = MaterialTheme.typography.labelMedium.copy(color = Ink), modifier = Modifier.weight(1f))

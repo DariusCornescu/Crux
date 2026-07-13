@@ -37,3 +37,24 @@ def test_quote_llm_failure_falls_back_static(db, monkeypatch):
     monkeypatch.setattr(quotes.llm, "complete", boom)
     q = quotes.get_today(db)
     assert q.source == "static" and q.text
+
+
+def test_quote_archive_newest_first_and_limit(client, db):
+    from datetime import date, timedelta
+
+    for i in range(3):
+        db.add(DailyQuote(day=date(2026, 7, 10) + timedelta(days=i), text=f"q{i}", source="static"))
+    db.commit()
+
+    r = client.get("/quote/archive?limit=2")
+    assert r.status_code == 200
+    body = r.json()
+    assert len(body) == 2                       # limit respected
+    assert body[0]["day"] >= body[1]["day"]     # newest first
+    assert body[0]["text"] == "q2"
+
+
+def test_quote_archive_empty_ok(client):
+    r = client.get("/quote/archive")
+    assert r.status_code == 200
+    assert r.json() == []

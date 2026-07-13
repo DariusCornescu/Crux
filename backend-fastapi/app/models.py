@@ -208,3 +208,26 @@ class DailyMood(Base):
     day: Mapped[date] = mapped_column(Date, unique=True, index=True)
     phrase: Mapped[str] = mapped_column(String(64))
     source: Mapped[str] = mapped_column(String(8), default="fallback")  # llm | fallback
+
+
+class DailyReflection(Base):
+    """The daily philosophical reflection — a short LLM meditation tying the
+    week's training to the current listening mood, cached one row per day."""
+    __tablename__ = "daily_reflections"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    day: Mapped[date] = mapped_column(Date, unique=True, index=True)
+    text: Mapped[str] = mapped_column(Text)
+    source: Mapped[str] = mapped_column(String(8), default="static")  # llm | static
+
+
+class DailyContribution(Base):
+    """GitHub contribution count per day — coding treated as another discipline.
+    One row per day; source records whether counts came from the GraphQL calendar
+    or the approximate public-events feed."""
+    __tablename__ = "daily_contributions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    day: Mapped[date] = mapped_column(Date, unique=True, index=True)
+    count: Mapped[int] = mapped_column(Integer, default=0)
+    source: Mapped[str] = mapped_column(String(16), default="events")  # graphql | events

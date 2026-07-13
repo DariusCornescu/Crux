@@ -17,9 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.darius.crux.network.GenreCountDTO
-import com.darius.crux.ui.theme.GateRed
 import com.darius.crux.ui.theme.Graphite
 import com.darius.crux.ui.theme.Ink
+import com.darius.crux.ui.theme.Space
 import com.darius.crux.ui.theme.Steel
 
 /**
@@ -30,9 +30,9 @@ import com.darius.crux.ui.theme.Steel
  */
 @Composable
 fun GenreBars(genres: List<GenreCountDTO>, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp)) {
-        Text("GENRES — LAST 30", style = MaterialTheme.typography.labelSmall.copy(color = GateRed))
-        Spacer(Modifier.height(10.dp))
+    Column(modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.sectionV)) {
+        SectionHeader("GENRES — LAST 30")
+        Spacer(Modifier.height(Space.md))
         if (genres.isEmpty()) {
             Text("NO GENRES YET", style = MaterialTheme.typography.labelSmall.copy(color = Graphite))
             return@Column

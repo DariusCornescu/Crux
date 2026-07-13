@@ -1,7 +1,6 @@
 package com.darius.crux.ui.screens
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,16 +26,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.darius.crux.data.model.ChatMessage
 import com.darius.crux.ui.components.ErrorStrip
 import com.darius.crux.ui.components.HairlineRule
-import com.darius.crux.ui.components.InstrumentLabel
 import com.darius.crux.ui.components.LoadingStrip
 import com.darius.crux.ui.components.MarkdownLite
+import com.darius.crux.ui.components.MeetSheetHeader
 import com.darius.crux.ui.theme.GateRed
 import com.darius.crux.ui.theme.Graphite
+import com.darius.crux.ui.theme.Space
 import com.darius.crux.ui.theme.Steel
 import com.darius.crux.ui.viewmodel.ChatViewModel
 import kotlinx.coroutines.delay
@@ -54,19 +53,17 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
         }
     }
 
-    Column(Modifier.fillMaxSize().imePadding().padding(top = 18.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            InstrumentLabel("CHAT", "ASK YOUR DATA", Steel)
-            if (uiState.messages.isNotEmpty()) {
-                ClearHistoryAction(onConfirm = viewModel::clearHistory)
-            }
-        }
-        Spacer(Modifier.height(10.dp))
-        HairlineRule()
+    Column(Modifier.fillMaxSize().imePadding().padding(top = Space.topInset)) {
+        MeetSheetHeader(
+            title = "CHAT",
+            subtitle = "ASK YOUR DATA",
+            accent = Steel,
+            trailing = {
+                if (uiState.messages.isNotEmpty()) {
+                    ClearHistoryAction(onConfirm = viewModel::clearHistory)
+                }
+            },
+        )
 
         when {
             uiState.isLoading -> LoadingStrip()
@@ -76,7 +73,7 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
                 "Ask anything about your training, sleep or mood — " +
                     "answers come from your own data.",
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(20.dp).weight(1f),
+                modifier = Modifier.padding(Space.screenH).weight(1f),
             )
             else -> LazyColumn(state = listState, modifier = Modifier.weight(1f)) {
                 items(uiState.messages, key = { it.id }) { message ->
@@ -91,7 +88,7 @@ fun ChatScreen(viewModel: ChatViewModel = viewModel()) {
             Text(
                 uiState.error ?: "",
                 style = MaterialTheme.typography.labelSmall.copy(color = GateRed),
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
+                modifier = Modifier.padding(horizontal = Space.screenH, vertical = Space.sm),
             )
         }
 
@@ -137,13 +134,13 @@ private fun ClearHistoryAction(onConfirm: () -> Unit) {
 /** Messages as timing-sheet entries — mono role tag, hairline separation. No bubbles. */
 @Composable
 private fun MessageRow(message: ChatMessage) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.md)) {
         Text(
             if (message.role == "user") "YOU" else "CRUX",
             style = MaterialTheme.typography.labelSmall.copy(
                 color = if (message.role == "user") Graphite else Steel),
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(Space.xs))
         if (message.role == "assistant") {
             MarkdownLite(message.content)
         } else {
@@ -162,7 +159,7 @@ private fun InputBar(
     Column {
         HairlineRule()
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.md),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             BasicTextField(
@@ -181,7 +178,7 @@ private fun InputBar(
                     innerTextField()
                 },
             )
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(Space.xl))
             Text(
                 if (enabled) "SEND" else "…",
                 style = MaterialTheme.typography.titleSmall.copy(

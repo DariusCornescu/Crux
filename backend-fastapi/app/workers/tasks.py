@@ -74,3 +74,33 @@ def sync_calendar() -> int:
         return calendar_sync.sync_ics(db)
     finally:
         db.close()
+
+
+@celery_app.task
+def sync_github() -> int:
+    from app import github
+    from app.config import get_settings
+
+    if not get_settings().github_username:
+        return 0  # not configured — nothing to do
+    db = SessionLocal()
+    try:
+        return github.sync(db)
+    finally:
+        db.close()
+
+
+@celery_app.task
+def prewarm_philosophy() -> int:
+    """Pre-generate today's mood, quote and reflection so the app never hits the
+    cold first-of-day LLM path. Mood first — the reflection depends on it."""
+    from app import mood, quotes, reflection
+
+    db = SessionLocal()
+    try:
+        mood.get_current(db)
+        quotes.get_today(db)
+        reflection.get_today(db)
+        return 1
+    finally:
+        db.close()

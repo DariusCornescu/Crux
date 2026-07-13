@@ -154,6 +154,7 @@ class IntegrationsStatus(BaseModel):
     strava: IntegrationState
     spotify: IntegrationState
     calendar: IntegrationState = IntegrationState()
+    github: IntegrationState = IntegrationState()
 
 
 class SyncResult(BaseModel):
@@ -166,6 +167,17 @@ class UpcomingEvent(BaseModel):
     start: datetime
     end: datetime
     subject: str | None = None
+    attendee_count: int | None = None
+    is_recurring: bool = False
+
+
+class CalendarEventOut(BaseModel):
+    """Full meeting record for the Meetings screen — like UpcomingEvent but also
+    exposes busy_status, and is served for past events too."""
+    start: datetime
+    end: datetime
+    subject: str | None = None
+    busy_status: str
     attendee_count: int | None = None
     is_recurring: bool = False
 

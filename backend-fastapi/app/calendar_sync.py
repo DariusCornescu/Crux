@@ -21,7 +21,11 @@ from app.models import CalendarEvent, OAuthToken
 logger = logging.getLogger(__name__)
 
 PROVIDER = "calendar_ics"
-WINDOW_PAST_DAYS = 30
+# Past window widened so each sync captures more history; rows are never pruned,
+# so the archive grows forward over time. NOTE: a published Outlook ICS feed only
+# exposes a bounded range, so this cannot backfill meetings older than whatever
+# the feed itself currently serves.
+WINDOW_PAST_DAYS = 120
 WINDOW_FUTURE_DAYS = 30
 BACK_TO_BACK_GAP_MIN = 5
 AFTER_HOURS_START = 19  # local hour

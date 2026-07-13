@@ -32,6 +32,13 @@ val CruxTypography = Typography(
         letterSpacing = 0.sp,
         color = Ink,
     ),
+    // Prominent prose — the daily-quote band and other focal sentences.
+    bodyLarge = TextStyle(
+        fontFamily = PlexSans,
+        fontSize = 19.sp,
+        lineHeight = 27.sp,
+        color = Ink,
+    ),
     // Section prose
     bodyMedium = TextStyle(
         fontFamily = PlexSans,

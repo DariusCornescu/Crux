@@ -163,3 +163,30 @@ def test_upcoming_endpoint_returns_future_events_in_order(client, db, configured
     assert starts == sorted(starts)
     for e in events:
         assert set(e) >= {"start", "end", "subject", "attendee_count", "is_recurring"}
+
+
+def test_events_endpoint_returns_all_newest_first_with_busy_status(client, db, monkeypatch, configured):
+    monkeypatch.setattr(calendar_sync.httpx, "get", lambda *a, **k: FakeResponse(text=ICS))
+    monkeypatch.setattr(calendar_sync, "_window", lambda: (WINDOW_START, WINDOW_END))
+    calendar_sync.sync_ics(db)
+
+    r = client.get("/calendar/events?limit=500")
+    assert r.status_code == 200
+    events = r.json()
+    assert len(events) == 6                        # past events are served, not just upcoming
+    starts = [e["start"] for e in events]
+    assert starts == sorted(starts, reverse=True)  # newest first
+    for e in events:
+        assert set(e) >= {"start", "end", "subject", "busy_status", "attendee_count", "is_recurring"}
+        assert e["busy_status"]                    # exposed here (omitted from /upcoming)
+
+
+def test_events_endpoint_from_filter(client, db, monkeypatch, configured):
+    monkeypatch.setattr(calendar_sync.httpx, "get", lambda *a, **k: FakeResponse(text=ICS))
+    monkeypatch.setattr(calendar_sync, "_window", lambda: (WINDOW_START, WINDOW_END))
+    calendar_sync.sync_ics(db)
+
+    # All fixture events end by 2026-07-07; a later `from` yields nothing.
+    r = client.get("/calendar/events?from=2026-07-08T00:00:00Z")
+    assert r.status_code == 200
+    assert r.json() == []

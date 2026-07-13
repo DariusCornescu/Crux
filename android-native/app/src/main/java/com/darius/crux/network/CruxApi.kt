@@ -49,12 +49,27 @@ interface CruxApi {
     @GET("calendar/upcoming")
     suspend fun getUpcomingEvents(@Query("limit") limit: Int = 2): Response<List<UpcomingEventDTO>>
 
+    @GET("calendar/events")
+    suspend fun getCalendarEvents(
+        @Query("from") from: String? = null,
+        @Query("limit") limit: Int = 200,
+    ): Response<List<CalendarEventDTO>>
+
     @GET("quote/today")
     suspend fun getQuoteToday(): Response<QuoteDTO>
+
+    @GET("quote/archive")
+    suspend fun getQuoteArchive(@Query("limit") limit: Int = 30): Response<List<QuoteDTO>>
+
+    @GET("reflection/today")
+    suspend fun getReflectionToday(): Response<ReflectionDTO>
 
     @GET("mood/current")
     suspend fun getMoodCurrent(): Response<MoodDTO>
 
     @GET("signals/detail")
     suspend fun getSignalsDetail(): Response<SignalsDTO>
+
+    @GET("github/heatmap")
+    suspend fun getGithubHeatmap(@Query("weeks") weeks: Int = 53): Response<GithubHeatmapDTO>
 }

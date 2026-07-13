@@ -29,7 +29,12 @@ data class ReportDTO(val id: Long, val kind: String, val period_start: String, v
 
 data class AuthorizeUrlDTO(val authorize_url: String)
 data class IntegrationStateDTO(val connected: Boolean, val athlete_id: String?, val last_synced_at: String?)
-data class IntegrationsStatusDTO(val strava: IntegrationStateDTO, val spotify: IntegrationStateDTO)
+data class IntegrationsStatusDTO(
+    val strava: IntegrationStateDTO,
+    val spotify: IntegrationStateDTO,
+    val calendar: IntegrationStateDTO? = null,
+    val github: IntegrationStateDTO? = null,
+)
 data class SyncResultDTO(val synced: Int)
 
 // ---- DTO -> domain mappers (cf. ListManagerApp's toEntity()) ----
@@ -75,11 +80,14 @@ fun ReportDTO.toModel() = Report(
 fun IntegrationStateDTO.toModel() = IntegrationState(
     connected = connected,
     lastSyncedAt = last_synced_at?.take(16)?.replace('T', ' '),
+    athleteId = athlete_id,
 )
 
 fun IntegrationsStatusDTO.toModel() = IntegrationsStatus(
     strava = strava.toModel(),
     spotify = spotify.toModel(),
+    calendar = calendar?.toModel(),
+    github = github?.toModel(),
 )
 
 // ---- Chat (step 6) ----
@@ -109,7 +117,18 @@ data class UpcomingEventDTO(
     val is_recurring: Boolean,
 )
 
+data class CalendarEventDTO(
+    val start: String,
+    val end: String,
+    val subject: String?,
+    val busy_status: String,
+    val attendee_count: Int?,
+    val is_recurring: Boolean,
+)
+
 data class QuoteDTO(val day: String, val text: String, val source: String)
+
+data class ReflectionDTO(val day: String, val text: String, val source: String)
 
 data class MoodDTO(val day: String, val phrase: String, val source: String)
 
@@ -133,6 +152,18 @@ data class SignalDayDTO(
 )
 
 data class GenreCountDTO(val genre: String, val count: Int)
+
+// ---- GitHub contribution heatmap ----
+
+data class DayContribDTO(val day: String, val count: Int)
+
+data class GithubHeatmapDTO(
+    val days: List<DayContribDTO>,
+    val total: Int,
+    val current_streak: Int,
+    val longest_streak: Int,
+    val source: String,
+)
 
 data class SignalsDTO(
     val recent_tracks: List<SignalTrackDTO>,

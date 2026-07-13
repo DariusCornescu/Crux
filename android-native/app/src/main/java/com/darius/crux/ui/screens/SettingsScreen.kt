@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -19,15 +18,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.darius.crux.data.model.IntegrationState
 import com.darius.crux.ui.components.HairlineRule
-import com.darius.crux.ui.components.InstrumentLabel
 import com.darius.crux.ui.components.LoadingStrip
+import com.darius.crux.ui.components.MeetSheetScreen
 import com.darius.crux.ui.theme.GateRed
 import com.darius.crux.ui.theme.Graphite
 import com.darius.crux.ui.theme.Scree
+import com.darius.crux.ui.theme.Space
 import com.darius.crux.ui.theme.Steel
 import com.darius.crux.ui.viewmodel.SettingsViewModel
 
@@ -39,22 +38,18 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
 
-    Column(Modifier.fillMaxSize().padding(top = 18.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            InstrumentLabel("SETTINGS", "LINKS & ACCOUNTS", Scree)
+    MeetSheetScreen(
+        title = "SETTINGS",
+        subtitle = "LINKS & ACCOUNTS",
+        accent = Scree,
+        trailing = {
             Text(
                 "REFRESH",
                 style = MaterialTheme.typography.titleSmall.copy(color = Graphite),
                 modifier = Modifier.clickable { viewModel.refresh() },
             )
-        }
-        Spacer(Modifier.height(10.dp))
-        HairlineRule()
-
+        },
+    ) {
         if (uiState.isLoading && uiState.status == null) {
             LoadingStrip()
         } else {
@@ -72,19 +67,21 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                 onSync = { viewModel.sync("spotify") },
             )
             HairlineRule()
+            GithubRow(state = uiState.status?.github, onSync = { viewModel.sync("github") })
+            HairlineRule()
             StaticRow("HEALTH CONNECT", "LATER STEP")
             HairlineRule()
         }
 
         uiState.syncMessage?.let {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Space.md))
             Text(it, style = MaterialTheme.typography.labelSmall.copy(color = Steel),
-                modifier = Modifier.padding(horizontal = 20.dp))
+                modifier = Modifier.padding(horizontal = Space.screenH))
         }
         uiState.error?.let {
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Space.md))
             Text(it, style = MaterialTheme.typography.labelSmall.copy(color = GateRed),
-                modifier = Modifier.padding(horizontal = 20.dp))
+                modifier = Modifier.padding(horizontal = Space.screenH))
         }
     }
 }
@@ -97,7 +94,7 @@ private fun ProviderRow(
     onSync: () -> Unit,
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.lg),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -129,11 +126,41 @@ private fun ProviderRow(
     }
 }
 
+/** GitHub is config-driven (no OAuth): SYNC NOW when the username is set on the
+ *  server, otherwise a static "not configured" note with no CONNECT affordance. */
+@Composable
+private fun GithubRow(state: IntegrationState?, onSync: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.lg),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column {
+            Text("GITHUB", style = MaterialTheme.typography.labelLarge)
+            Text(
+                if (state?.connected == true) {
+                    "@${state.athleteId ?: "?"}" + (state.lastSyncedAt?.let { " · LAST SYNC $it" } ?: "")
+                } else {
+                    "NOT CONFIGURED — SET GITHUB_USERNAME"
+                },
+                style = MaterialTheme.typography.labelSmall.copy(color = Graphite),
+            )
+        }
+        if (state?.connected == true) {
+            Text(
+                "SYNC NOW",
+                style = MaterialTheme.typography.titleSmall.copy(color = Steel),
+                modifier = Modifier.clickable(onClick = onSync),
+            )
+        }
+    }
+}
+
 @Composable
 private fun StaticRow(name: String, status: String) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp)) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.lg)) {
         Text(name, style = MaterialTheme.typography.labelLarge)
-        Spacer(Modifier.height(2.dp))
+        Spacer(Modifier.height(Space.xs))
         Text(status, style = MaterialTheme.typography.labelSmall.copy(color = Graphite))
     }
 }

@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     calendar_ics_url: str = ""
     home_timezone: str = "Europe/Bucharest"
 
+    # GitHub activity (coding as another discipline). Username-only uses the public
+    # events API (approximate, recent). An optional PAT (not OAuth) unlocks the true
+    # GraphQL contribution calendar, incl. private contributions if the token allows.
+    github_username: str = ""
+    github_token: str = ""
+    github_api_base_url: str = "https://api.github.com"
+
     fcm_service_account_json_path: str = ""
 
     @field_validator("database_url")

@@ -1,11 +1,8 @@
 package com.darius.crux.ui.screens
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,17 +13,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.darius.crux.data.model.Report
 import com.darius.crux.ui.components.ErrorStrip
 import com.darius.crux.ui.components.HairlineRule
-import com.darius.crux.ui.components.InstrumentLabel
 import com.darius.crux.ui.components.LoadingStrip
+import com.darius.crux.ui.components.MeetSheetScreen
 import com.darius.crux.ui.theme.GateRed
 import com.darius.crux.ui.theme.Graphite
+import com.darius.crux.ui.theme.Space
 import com.darius.crux.ui.viewmodel.ReportsViewModel
 
 @Composable
@@ -36,23 +32,21 @@ fun ReportsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Column(Modifier.fillMaxSize().padding(top = 18.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            InstrumentLabel("REPORTS", "WEEKLY ANALYSIS", GateRed)
+    MeetSheetScreen(
+        title = "REPORTS",
+        subtitle = "WEEKLY ANALYSIS",
+        accent = GateRed,
+        scroll = false,
+        trailing = {
             Text(
                 if (uiState.isGenerating) "GENERATING…" else "GENERATE",
                 style = MaterialTheme.typography.titleSmall.copy(
-                    color = if (uiState.isGenerating) Graphite else GateRed),
+                    color = if (uiState.isGenerating) Graphite else GateRed,
+                ),
                 modifier = Modifier.clickable(enabled = !uiState.isGenerating) { viewModel.generate() },
             )
-        }
-        Spacer(Modifier.height(10.dp))
-        HairlineRule()
-
+        },
+    ) {
         when {
             uiState.isLoading -> LoadingStrip()
             uiState.error != null && uiState.reports.isEmpty() ->
@@ -61,7 +55,7 @@ fun ReportsScreen(
                 "No reports yet. GENERATE builds one for the last completed week; " +
                     "the backend also runs every Monday 05:00 UTC.",
                 style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(20.dp),
+                modifier = Modifier.padding(Space.screenH),
             )
             else -> LazyColumn {
                 items(uiState.reports, key = { it.id }) { report ->
@@ -77,14 +71,14 @@ fun ReportsScreen(
 private fun ReportRow(report: Report, onClick: () -> Unit) {
     Column(
         Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
+            .padding(horizontal = Space.screenH, vertical = Space.lg),
     ) {
         Text(
             "${report.kind.uppercase()} · ${report.periodStart} → ${report.periodEnd}",
             style = MaterialTheme.typography.labelMedium,
         )
         report.headline?.let {
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(Space.xs))
             Text(it, style = MaterialTheme.typography.bodySmall)
         }
     }

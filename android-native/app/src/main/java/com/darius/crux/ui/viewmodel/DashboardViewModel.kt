@@ -2,9 +2,12 @@ package com.darius.crux.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.darius.crux.data.local.CruxPreferences
 import com.darius.crux.data.model.DashboardData
 import com.darius.crux.data.repository.DashboardRepository
+import com.darius.crux.data.repository.GithubRepository
 import com.darius.crux.data.repository.RepoResult
+import com.darius.crux.network.GithubHeatmapDTO
 import com.darius.crux.network.UpcomingEventDTO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,9 +22,13 @@ data class DashboardUiState(
 
 class DashboardViewModel : ViewModel() {
     private val repository = DashboardRepository()
+    private val githubRepository = GithubRepository()
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    private val _heatmap = MutableStateFlow<GithubHeatmapDTO?>(null)
+    val heatmap: StateFlow<GithubHeatmapDTO?> = _heatmap.asStateFlow()
 
     // NEXT UP agenda and daily quote load independently of the main dashboard
     // fetch above — either can fail/lag without blocking or gating the rest.
@@ -44,6 +51,7 @@ class DashboardViewModel : ViewModel() {
         loadAgenda()
         loadQuote()
         loadMood()
+        loadHeatmap()
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             when (val result = repository.getDashboard()) {
@@ -70,13 +78,19 @@ class DashboardViewModel : ViewModel() {
 
     private fun loadQuote() {
         viewModelScope.launch {
-            _quote.value = try {
+            // Seed from the on-device cache so a previously-seen quote never vanishes
+            // on a cold or offline start (the old code nulled it on any failure).
+            if (_quote.value == null) _quote.value = CruxPreferences.lastQuote()
+            try {
                 when (val result = repository.getQuoteToday()) {
-                    is RepoResult.Success -> result.data.text
-                    is RepoResult.Error -> null
+                    is RepoResult.Success -> {
+                        _quote.value = result.data.text
+                        CruxPreferences.saveQuote(result.data.text)
+                    }
+                    is RepoResult.Error -> { /* keep the cached value */ }
                 }
             } catch (e: Exception) {
-                null
+                /* keep the cached value */
             }
         }
     }
@@ -86,6 +100,19 @@ class DashboardViewModel : ViewModel() {
             _mood.value = try {
                 when (val result = repository.getMoodCurrent()) {
                     is RepoResult.Success -> result.data.phrase
+                    is RepoResult.Error -> null
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    private fun loadHeatmap() {
+        viewModelScope.launch {
+            _heatmap.value = try {
+                when (val result = githubRepository.getHeatmap(weeks = 20)) {
+                    is RepoResult.Success -> result.data
                     is RepoResult.Error -> null
                 }
             } catch (e: Exception) {

@@ -1,16 +1,13 @@
 package com.darius.crux.ui.screens
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,42 +18,60 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.darius.crux.data.model.Conditions
 import com.darius.crux.data.model.DashboardData
+import com.darius.crux.network.GithubHeatmapDTO
 import com.darius.crux.network.UpcomingEventDTO
 import com.darius.crux.ui.components.AgendaBlock
 import com.darius.crux.ui.components.AltiInstrument
+import com.darius.crux.ui.components.ContributionGrid
 import com.darius.crux.ui.components.ErrorStrip
 import com.darius.crux.ui.components.HairlineRule
+import com.darius.crux.ui.components.HeroReadout
 import com.darius.crux.ui.components.LoadingStrip
+import com.darius.crux.ui.components.MeetSheetScreen
+import com.darius.crux.ui.components.MoodTrace
 import com.darius.crux.ui.components.RailTape
+import com.darius.crux.ui.components.SectionHeader
 import com.darius.crux.ui.components.StripInstrument
 import com.darius.crux.ui.theme.GateRed
 import com.darius.crux.ui.theme.Graphite
+import com.darius.crux.ui.theme.Ink
+import com.darius.crux.ui.theme.Space
+import com.darius.crux.ui.theme.Steel
 import com.darius.crux.ui.viewmodel.DashboardViewModel
 import java.util.Locale
 
 @Composable
-fun DashboardScreen(onOpenSignals: () -> Unit = {}, viewModel: DashboardViewModel = viewModel()) {
+fun DashboardScreen(
+    onOpenSignals: () -> Unit = {},
+    onOpenPhilosophy: () -> Unit = {},
+    onOpenMeetings: () -> Unit = {},
+    viewModel: DashboardViewModel = viewModel(),
+) {
     val uiState by viewModel.uiState.collectAsState()
     val agenda by viewModel.agenda.collectAsState()
     val quote by viewModel.quote.collectAsState()
     val mood by viewModel.mood.collectAsState()
+    val heatmap by viewModel.heatmap.collectAsState()
     var expandedAgendaIndex by remember { mutableStateOf<Int?>(null) }
 
-    Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-        BezelHeader(week = uiState.data?.week, isDemo = uiState.data?.isDemo == true)
-
+    MeetSheetScreen(
+        title = "CRUX",
+        accent = Ink,
+        trailing = { WeekTag(uiState.data?.week, uiState.data?.isDemo == true) },
+    ) {
         quote?.let {
+            Column(
+                Modifier.fillMaxWidth().clickable(onClick = onOpenPhilosophy)
+                    .padding(horizontal = Space.screenH, vertical = Space.lg),
+            ) {
+                Text(it, style = MaterialTheme.typography.bodyLarge)
+                Spacer(Modifier.height(Space.sm))
+                Text("PHILOSOPHY →", style = MaterialTheme.typography.labelSmall.copy(color = GateRed))
+            }
             HairlineRule()
-            Text(
-                it,
-                style = MaterialTheme.typography.bodyMedium.copy(color = Graphite, textAlign = TextAlign.Center),
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp),
-            )
         }
 
         when {
@@ -72,10 +87,33 @@ fun DashboardScreen(onOpenSignals: () -> Unit = {}, viewModel: DashboardViewMode
                 },
                 moodPhrase = mood,
                 onOpenSignals = onOpenSignals,
+                onOpenMeetings = onOpenMeetings,
             )
         }
 
-        Spacer(Modifier.height(24.dp))
+        // CODE — GitHub contributions as another discipline (only once synced).
+        heatmap?.let { h ->
+            if (h.source != "none") {
+                HairlineRule()
+                CodeBlock(h)
+            }
+        }
+
+        Spacer(Modifier.height(Space.xxl))
+    }
+}
+
+@Composable
+private fun CodeBlock(h: GithubHeatmapDTO) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.sectionV)) {
+        SectionHeader("CODE", subtitle = if (h.source == "events") "APPROX" else null, accent = Steel)
+        Spacer(Modifier.height(Space.md))
+        ContributionGrid(h.days)
+        Spacer(Modifier.height(Space.sm))
+        Text(
+            "STREAK ${h.current_streak} · LONGEST ${h.longest_streak} · ${h.total} CONTRIB",
+            style = MaterialTheme.typography.labelMedium.copy(color = Ink),
+        )
     }
 }
 
@@ -87,22 +125,36 @@ private fun DashboardBody(
     onToggleAgenda: (Int) -> Unit,
     moodPhrase: String?,
     onOpenSignals: () -> Unit,
+    onOpenMeetings: () -> Unit,
 ) {
+    // Hero — the one Anton readout: the week's aerobic base, the rebuild's headline number.
+    HeroReadout(
+        value = String.format(Locale.US, "%.1f", data.strip.weekKm),
+        unit = "KM",
+        caption = "WK ${data.week} · AEROBIC BASE",
+    )
+    HairlineRule()
+
+    // COND + mood barograph — the tappable window into SIGNALS.
     Column(Modifier.fillMaxWidth().clickable(onClick = onOpenSignals)) {
         ConditionsStrip(data.conditions, moodPhrase)
+        MoodTrace(
+            data.moodTrend,
+            modifier = Modifier.padding(horizontal = Space.screenH).padding(bottom = Space.md),
+        )
     }
     HairlineRule()
 
     // THE RAIL — signature element
-    Column(Modifier.padding(horizontal = 20.dp, vertical = 14.dp)) {
-        Text("THE RAIL — WK ${data.week}", style = MaterialTheme.typography.titleSmall)
-        Spacer(Modifier.height(4.dp))
+    Column(Modifier.padding(horizontal = Space.screenH, vertical = Space.lg)) {
+        SectionHeader("THE RAIL", subtitle = "WK ${data.week}", accent = Ink)
+        Spacer(Modifier.height(Space.xs))
         RailTape(data.rail)
     }
     HairlineRule()
 
     if (!agenda.isNullOrEmpty()) {
-        AgendaBlock(agenda, expandedAgendaIndex, onToggleAgenda)
+        AgendaBlock(agenda, expandedAgendaIndex, onToggleAgenda, onOpenAll = onOpenMeetings)
         HairlineRule()
     }
 
@@ -113,26 +165,16 @@ private fun DashboardBody(
 }
 
 @Composable
-private fun BezelHeader(week: Int?, isDemo: Boolean) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text("CRUX", style = MaterialTheme.typography.titleSmall)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            if (isDemo) {
-                Text(
-                    "DEMO SIGNAL",
-                    style = MaterialTheme.typography.labelSmall.copy(color = GateRed),
-                )
-                Spacer(Modifier.padding(horizontal = 6.dp))
-            }
-            Text(
-                week?.let { "WK $it" } ?: "--",
-                style = MaterialTheme.typography.labelMedium.copy(color = Graphite),
-            )
+private fun WeekTag(week: Int?, isDemo: Boolean) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        if (isDemo) {
+            Text("DEMO SIGNAL", style = MaterialTheme.typography.labelSmall.copy(color = GateRed))
+            Spacer(Modifier.width(Space.sm))
         }
+        Text(
+            week?.let { "WK $it" } ?: "--",
+            style = MaterialTheme.typography.labelMedium.copy(color = Graphite),
+        )
     }
 }
 
@@ -143,11 +185,11 @@ private fun ConditionsStrip(c: Conditions, moodPhrase: String?) {
     val mood = moodPhrase ?: "…"
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 10.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Space.screenH).padding(bottom = Space.md),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text("COND", style = MaterialTheme.typography.labelSmall.copy(color = GateRed))
-        Spacer(Modifier.padding(horizontal = 6.dp))
+        Spacer(Modifier.width(Space.sm))
         Text("SLEEP $sleep · RHR $rhr · MOOD $mood", style = MaterialTheme.typography.labelSmall)
     }
 }

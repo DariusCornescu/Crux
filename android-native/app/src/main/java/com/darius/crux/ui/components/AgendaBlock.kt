@@ -17,6 +17,7 @@ import com.darius.crux.network.UpcomingEventDTO
 import com.darius.crux.ui.theme.GateRed
 import com.darius.crux.ui.theme.Graphite
 import com.darius.crux.ui.theme.Ink
+import com.darius.crux.ui.theme.Space
 import java.time.Duration
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -40,16 +41,28 @@ fun AgendaBlock(
     expandedIndex: Int?,
     onToggle: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenAll: (() -> Unit)? = null,
 ) {
-    Column(modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp)) {
-        Text("NEXT UP", style = MaterialTheme.typography.labelSmall.copy(color = GateRed))
-        Spacer(Modifier.height(10.dp))
+    val cb = onOpenAll
+    val trailingAction: (@Composable () -> Unit)? = if (cb != null) { { AllAction(cb) } } else null
+    Column(modifier = modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.sectionV)) {
+        SectionHeader("NEXT UP", trailing = trailingAction)
+        Spacer(Modifier.height(Space.md))
 
         events.forEachIndexed { index, event ->
-            if (index != 0) Spacer(Modifier.height(10.dp))
+            if (index != 0) Spacer(Modifier.height(Space.md))
             AgendaRow(event, expanded = expandedIndex == index, onToggle = { onToggle(index) })
         }
     }
+}
+
+@Composable
+private fun AllAction(onClick: () -> Unit) {
+    Text(
+        "ALL →",
+        style = MaterialTheme.typography.labelSmall.copy(color = GateRed),
+        modifier = Modifier.clickable(onClick = onClick),
+    )
 }
 
 /** One agenda row: `HH:mm–HH:mm · subject`. Defensive — malformed timestamps skip the row. */

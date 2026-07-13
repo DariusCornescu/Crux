@@ -58,6 +58,9 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
 
+    // On-device cache for the philosophy zone (last quote/reflection survive restarts)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
     // FCM (step 7) — compiles without Firebase config; runtime is guarded
     implementation("com.google.firebase:firebase-messaging:24.1.0")
 
