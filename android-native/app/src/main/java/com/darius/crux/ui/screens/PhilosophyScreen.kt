@@ -52,6 +52,10 @@ fun PhilosophyScreen(
                         SectionHeader("TODAY")
                         Spacer(Modifier.height(Space.md))
                         Text(quote, style = MaterialTheme.typography.bodyLarge)
+                        uiState.quoteAuthor?.let { author ->
+                            Spacer(Modifier.height(Space.sm))
+                            Text("— $author", style = MaterialTheme.typography.labelMedium.copy(color = Graphite))
+                        }
                     }
                     HairlineRule()
                 }
@@ -61,6 +65,8 @@ fun PhilosophyScreen(
                         SectionHeader("REFLECTION")
                         Spacer(Modifier.height(Space.md))
                         Text(reflection, style = MaterialTheme.typography.bodyMedium.copy(color = Ink))
+                        Spacer(Modifier.height(Space.sm))
+                        Text("— CRUX", style = MaterialTheme.typography.labelMedium.copy(color = Graphite))
                     }
                     HairlineRule()
                 }
@@ -86,6 +92,10 @@ private fun ArchiveSection(archive: List<QuoteDTO>) {
                 Text(formatDay(q.day), style = MaterialTheme.typography.labelSmall.copy(color = Graphite))
                 Spacer(Modifier.height(Space.xs))
                 Text(q.text, style = MaterialTheme.typography.bodyMedium.copy(color = Ink))
+                q.author?.let { author ->
+                    Spacer(Modifier.height(Space.xs))
+                    Text("— $author", style = MaterialTheme.typography.labelSmall.copy(color = Graphite))
+                }
             }
         }
     }

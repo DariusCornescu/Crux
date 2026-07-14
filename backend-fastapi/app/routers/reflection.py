@@ -14,6 +14,7 @@ class ReflectionOut(BaseModel):
     day: date
     text: str
     source: str
+    author: str = "CRUX"   # the reflection is Crux's own voice
 
 
 @router.get("/today", response_model=ReflectionOut)

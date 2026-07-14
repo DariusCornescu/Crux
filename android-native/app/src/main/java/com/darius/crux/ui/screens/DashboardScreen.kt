@@ -53,6 +53,7 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsState()
     val agenda by viewModel.agenda.collectAsState()
     val quote by viewModel.quote.collectAsState()
+    val quoteAuthor by viewModel.quoteAuthor.collectAsState()
     val mood by viewModel.mood.collectAsState()
     val heatmap by viewModel.heatmap.collectAsState()
     var expandedAgendaIndex by remember { mutableStateOf<Int?>(null) }
@@ -68,6 +69,10 @@ fun DashboardScreen(
                     .padding(horizontal = Space.screenH, vertical = Space.lg),
             ) {
                 Text(it, style = MaterialTheme.typography.bodyLarge)
+                quoteAuthor?.let { author ->
+                    Spacer(Modifier.height(Space.xs))
+                    Text("— $author", style = MaterialTheme.typography.labelMedium.copy(color = Graphite))
+                }
                 Spacer(Modifier.height(Space.sm))
                 Text("PHILOSOPHY →", style = MaterialTheme.typography.labelSmall.copy(color = GateRed))
             }

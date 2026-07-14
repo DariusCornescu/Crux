@@ -38,6 +38,9 @@ class DashboardViewModel : ViewModel() {
     private val _quote = MutableStateFlow<String?>(null)
     val quote: StateFlow<String?> = _quote.asStateFlow()
 
+    private val _quoteAuthor = MutableStateFlow<String?>(null)
+    val quoteAuthor: StateFlow<String?> = _quoteAuthor.asStateFlow()
+
     private val _mood = MutableStateFlow<String?>(null)
     val mood: StateFlow<String?> = _mood.asStateFlow()
 
@@ -80,12 +83,16 @@ class DashboardViewModel : ViewModel() {
         viewModelScope.launch {
             // Seed from the on-device cache so a previously-seen quote never vanishes
             // on a cold or offline start (the old code nulled it on any failure).
-            if (_quote.value == null) _quote.value = CruxPreferences.lastQuote()
+            if (_quote.value == null) {
+                _quote.value = CruxPreferences.lastQuote()
+                _quoteAuthor.value = CruxPreferences.lastQuoteAuthor()
+            }
             try {
                 when (val result = repository.getQuoteToday()) {
                     is RepoResult.Success -> {
                         _quote.value = result.data.text
-                        CruxPreferences.saveQuote(result.data.text)
+                        _quoteAuthor.value = result.data.author
+                        CruxPreferences.saveQuote(result.data.text, result.data.author)
                     }
                     is RepoResult.Error -> { /* keep the cached value */ }
                 }

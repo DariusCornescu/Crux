@@ -126,9 +126,9 @@ data class CalendarEventDTO(
     val is_recurring: Boolean,
 )
 
-data class QuoteDTO(val day: String, val text: String, val source: String)
+data class QuoteDTO(val day: String, val text: String, val source: String, val author: String? = null)
 
-data class ReflectionDTO(val day: String, val text: String, val source: String)
+data class ReflectionDTO(val day: String, val text: String, val source: String, val author: String? = null)
 
 data class MoodDTO(val day: String, val phrase: String, val source: String)
 

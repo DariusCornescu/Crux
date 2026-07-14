@@ -1,35 +1,44 @@
-"""Daily motivational line — LLM-personalized from the week's training, the current
-music mood, and a rotating daily philosophical lens, cached per day in daily_quotes.
-The lens + mood keep the line varying day to day even when training is flat.
-Deterministic static fallback offline."""
+"""Daily quote — a curated, genuinely-attributed line from thinkers, mountaineers and
+endurance athletes, rotating deterministically by day. The personalized daily
+*reflection* lives in reflection.py; the training/lens helpers here are shared with it."""
 import logging
 from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app import llm
-from app.models import Activity, DailyMood, DailyQuote, EffortMode
+from app.models import Activity, DailyQuote, EffortMode
 
 logger = logging.getLogger(__name__)
 
-STATIC_QUOTES = [
-    "The mountain doesn't care how you feel. Show up anyway.",
-    "Base miles are deposits. Race day makes the withdrawal.",
-    "Slow is smooth, smooth is far.",
-    "You don't rise to the summit; you fall to your training.",
-    "Heavy pack, light mind.",
-    "Consistency beats intensity when intensity quits.",
-    "Every easy kilometer is a brick in the engine.",
-    "The best pace is the one you can hold tomorrow too.",
-    "Vertical meters are honest meters.",
-    "Train the engine, respect the springs.",
-    "No wind is unfair if you packed for it.",
-    "Today's discipline is next season's freedom.",
+# (quote, author) — real, curated attributions. Rotated by day-of-year. Keep quotes
+# short and the attributions accurate; do not add lines you can't attribute.
+CURATED: list[tuple[str, str]] = [
+    ("It is not the mountain we conquer, but ourselves.", "Edmund Hillary"),
+    ("Getting to the top is optional. Getting down is mandatory.", "Ed Viesturs"),
+    ("The mountains are calling and I must go.", "John Muir"),
+    ("We are what we repeatedly do. Excellence, then, is not an act, but a habit.", "Will Durant"),
+    ("It does not matter how slowly you go as long as you do not stop.", "Confucius"),
+    ("A journey of a thousand miles begins with a single step.", "Lao Tzu"),
+    ("You have power over your mind, not outside events. Realize this, and you will find strength.", "Marcus Aurelius"),
+    ("We suffer more often in imagination than in reality.", "Seneca"),
+    ("No man is free who is not master of himself.", "Epictetus"),
+    ("He who has a why to live can bear almost any how.", "Friedrich Nietzsche"),
+    ("To give anything less than your best is to sacrifice the gift.", "Steve Prefontaine"),
+    ("Pain is inevitable. Suffering is optional.", "Haruki Murakami"),
+    ("Only the disciplined ones in life are free.", "Eliud Kipchoge"),
+    ("It always seems impossible until it's done.", "Nelson Mandela"),
+    ("Adopt the pace of nature: her secret is patience.", "Ralph Waldo Emerson"),
+    ("A man can be destroyed but not defeated.", "Ernest Hemingway"),
+    ("The impediment to action advances action. What stands in the way becomes the way.", "Marcus Aurelius"),
+    ("Do not pray for an easy life; pray for the strength to endure a difficult one.", "Bruce Lee"),
+    ("Fall seven times, stand up eight.", "Japanese proverb"),
+    ("It is not because things are difficult that we do not dare; it is because we do not dare that they are difficult.", "Seneca"),
+    ("The summit is what drives us, but the climb itself is what matters.", "Conrad Anker"),
+    ("What we achieve inwardly will change outer reality.", "Plutarch"),
 ]
 
-# Rotating daily lenses — the angle the day's line is written through, so the
-# philosophy shifts day to day even during a quiet training block.
+# Rotating daily lenses — shared with the reflection so its angle shifts day to day.
 LENSES = [
     "discipline over motivation",
     "patience and the long base",
@@ -46,14 +55,6 @@ LENSES = [
     "weather and things you cannot control",
     "showing up on the dull days",
 ]
-
-SYSTEM = """Write ONE short line (max 120 characters) of dry, grounded training
-philosophy for an athlete — a former 60m sprint champion rebuilding aerobic base and
-preparing for the mountains. You are given the week's training numbers, days since
-the last session, the current music mood, and TODAY'S LENS. Write THROUGH the lens
-and let the mood colour it, so each day reads differently. If training is quiet, treat
-rest and patience as part of the work — never shame inactivity, and never reuse
-yesterday's framing. No surrounding quotes, no emoji, no hashtags. Not cheerleading."""
 
 
 def lens_for(day: date) -> str:
@@ -80,38 +81,13 @@ def _days_since_last_session(db: Session) -> str:
     return f"Last logged session was {days} days ago."
 
 
-def _todays_mood(db: Session) -> str | None:
-    row = db.scalar(select(DailyMood).where(DailyMood.day == date.today()))
-    return row.phrase if row else None
-
-
-def _context(db: Session) -> str:
-    parts = [_week_snapshot(db), _days_since_last_session(db)]
-    mood = _todays_mood(db)
-    if mood:
-        parts.append(f"Current music mood: {mood}.")
-    parts.append(f"Today's lens: {lens_for(date.today())}.")
-    return "\n".join(parts)
-
-
 def get_today(db: Session) -> DailyQuote:
     today = date.today()
     row = db.scalar(select(DailyQuote).where(DailyQuote.day == today))
     if row is not None:
         return row
-    text, source = None, "static"
-    if llm.is_configured():
-        try:
-            text = llm.complete(system=SYSTEM,
-                                messages=[{"role": "user", "content": _context(db)}],
-                                max_tokens=160).strip().strip('"')
-            source = "llm"
-        except Exception as e:
-            logger.warning("quote generation failed, using static: %s", e)
-            text = None
-    if not text:
-        text, source = STATIC_QUOTES[today.timetuple().tm_yday % len(STATIC_QUOTES)], "static"
-    row = DailyQuote(day=today, text=text, source=source)
+    text, author = CURATED[today.timetuple().tm_yday % len(CURATED)]
+    row = DailyQuote(day=today, text=text, author=author, source="curated")
     db.add(row)
     db.commit()
     db.refresh(row)

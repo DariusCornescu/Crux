@@ -1,21 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The Gate: a GateRed 'C' timing-gate monogram with a Steel beam across the opening -->
+<!-- Themed-icon (Android 13+) silhouette of The Gate; the system tints this layer -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 'C' gate — open to the right (large arc, centered on the icon) -->
     <path
         android:pathData="M69,33 A26,26 0 1 0 69,75"
-        android:strokeColor="#C33B2A"
+        android:strokeColor="#000000"
         android:strokeWidth="10"
         android:strokeLineCap="round"
         android:fillColor="#00000000" />
-    <!-- Steel timing beam across the gate opening -->
     <path
         android:pathData="M57,54 L86,54"
-        android:strokeColor="#2F5D7C"
+        android:strokeColor="#000000"
         android:strokeWidth="7"
         android:strokeLineCap="round"
         android:fillColor="#00000000" />

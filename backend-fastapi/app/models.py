@@ -198,7 +198,8 @@ class DailyQuote(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     day: Mapped[date] = mapped_column(Date, unique=True, index=True)
     text: Mapped[str] = mapped_column(Text)
-    source: Mapped[str] = mapped_column(String(8), default="static")  # llm | static
+    source: Mapped[str] = mapped_column(String(8), default="static")  # curated | llm | static
+    author: Mapped[str | None] = mapped_column(String(64), nullable=True)  # attribution, when curated
 
 
 class DailyMood(Base):
