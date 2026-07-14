@@ -87,4 +87,7 @@ interface CruxApi {
 
     @GET("readiness/today")
     suspend fun getReadiness(): Response<ReadinessDTO>
+
+    @POST("wellness/ingest")
+    suspend fun ingestWellness(@Body body: WellnessBatchDTO): Response<WellnessIngestDTO>
 }

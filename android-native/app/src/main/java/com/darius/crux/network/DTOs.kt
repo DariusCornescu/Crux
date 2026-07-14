@@ -206,6 +206,19 @@ data class ReadinessDTO(
     val training_load: Double?,
 )
 
+// ---- Health Connect wellness ingest ----
+
+data class WellnessSampleDTO(
+    val recorded_at: String,
+    val kind: String,
+    val value: Double,
+    val source: String = "health_connect",
+)
+
+data class WellnessBatchDTO(val samples: List<WellnessSampleDTO>)
+
+data class WellnessIngestDTO(val ingested: Int, val duplicates: Int)
+
 data class SignalsDTO(
     val recent_tracks: List<SignalTrackDTO>,
     val daily: List<SignalDayDTO>,

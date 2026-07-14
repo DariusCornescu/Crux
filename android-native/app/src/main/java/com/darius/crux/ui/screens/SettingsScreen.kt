@@ -17,8 +17,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.platform.LocalContext
+import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.darius.crux.data.health.HealthConnectManager
 import com.darius.crux.data.model.IntegrationState
 import com.darius.crux.ui.components.HairlineRule
 import com.darius.crux.ui.components.LoadingStrip
@@ -37,6 +40,9 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
     val openUrl: (String) -> Unit = { url ->
         context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
     }
+    val healthLauncher = rememberLauncherForActivityResult(
+        PermissionController.createRequestPermissionResultContract(),
+    ) { viewModel.syncHealth() }
 
     MeetSheetScreen(
         title = "SETTINGS",
@@ -71,7 +77,11 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             HairlineRule()
             NotificationsRow(onTest = { viewModel.testPush() })
             HairlineRule()
-            StaticRow("HEALTH CONNECT", "LATER STEP")
+            if (viewModel.healthAvailable) {
+                HealthRow(onSync = { healthLauncher.launch(HealthConnectManager.PERMISSIONS) })
+            } else {
+                StaticRow("HEALTH CONNECT", "NOT AVAILABLE")
+            }
             HairlineRule()
         }
 
@@ -174,6 +184,25 @@ private fun NotificationsRow(onTest: () -> Unit) {
             "SEND TEST",
             style = MaterialTheme.typography.titleSmall.copy(color = Steel),
             modifier = Modifier.clickable(onClick = onTest),
+        )
+    }
+}
+
+@Composable
+private fun HealthRow(onSync: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.lg),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column {
+            Text("HEALTH CONNECT", style = MaterialTheme.typography.labelLarge)
+            Text("SLEEP · RHR · HRV", style = MaterialTheme.typography.labelSmall.copy(color = Graphite))
+        }
+        Text(
+            "SYNC NOW",
+            style = MaterialTheme.typography.titleSmall.copy(color = Scree),
+            modifier = Modifier.clickable(onClick = onSync),
         )
     }
 }

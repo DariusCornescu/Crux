@@ -1,7 +1,9 @@
 package com.darius.crux.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.darius.crux.data.health.HealthConnectManager
 import com.darius.crux.data.model.IntegrationsStatus
 import com.darius.crux.data.repository.IntegrationsRepository
 import com.darius.crux.data.repository.RepoResult
@@ -17,8 +19,11 @@ data class SettingsUiState(
     val error: String? = null,
 )
 
-class SettingsViewModel : ViewModel() {
+class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     private val repository = IntegrationsRepository()
+    private val health = HealthConnectManager(app)
+
+    val healthAvailable: Boolean get() = health.available()
 
     private val _uiState = MutableStateFlow(SettingsUiState())
     val uiState: StateFlow<SettingsUiState> = _uiState.asStateFlow()
@@ -75,6 +80,20 @@ class SettingsViewModel : ViewModel() {
                 is RepoResult.Error -> _uiState.value =
                     _uiState.value.copy(syncMessage = null, error = result.message)
             }
+        }
+    }
+
+    fun syncHealth() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(syncMessage = "SYNCING HEALTH…", error = null)
+            val n = health.sync()
+            _uiState.value = _uiState.value.copy(
+                syncMessage = when {
+                    n > 0 -> "HEALTH +$n SAMPLES"
+                    n == 0 -> "NO NEW HEALTH DATA"
+                    else -> "HEALTH UNAVAILABLE / NOT ALLOWED"
+                },
+            )
         }
     }
 }
