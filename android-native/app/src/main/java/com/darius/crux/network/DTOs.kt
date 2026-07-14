@@ -165,6 +165,46 @@ data class GithubHeatmapDTO(
     val source: String,
 )
 
+// ---- Summit objective ----
+
+data class ObjectiveDTO(
+    val name: String,
+    val elevation_m: Int?,
+    val target_date: String,
+    val vert_goal_m: Int,
+    val start_date: String,
+    val banked_m: Int,
+    val days_to_go: Int,
+)
+
+data class ObjectiveInDTO(
+    val name: String,
+    val elevation_m: Int?,
+    val target_date: String,
+    val vert_goal_m: Int,
+)
+
+// ---- Training contribution grid ----
+
+data class TrainingDayDTO(val day: String, val mode: String?, val minutes: Int)
+
+data class TrainingGridDTO(
+    val days: List<TrainingDayDTO>,
+    val total_sessions: Int,
+    val active_days: Int,
+)
+
+// ---- Readiness ----
+
+data class ReadinessDTO(
+    val score: Int,
+    val label: String,
+    val low_data: Boolean,
+    val sleep_min: Int?,
+    val resting_hr: Int?,
+    val training_load: Double?,
+)
+
 data class SignalsDTO(
     val recent_tracks: List<SignalTrackDTO>,
     val daily: List<SignalDayDTO>,

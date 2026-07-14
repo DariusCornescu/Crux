@@ -6,8 +6,12 @@ import com.darius.crux.data.local.CruxPreferences
 import com.darius.crux.data.model.DashboardData
 import com.darius.crux.data.repository.DashboardRepository
 import com.darius.crux.data.repository.GithubRepository
+import com.darius.crux.data.repository.ObjectiveRepository
 import com.darius.crux.data.repository.RepoResult
 import com.darius.crux.network.GithubHeatmapDTO
+import com.darius.crux.network.ObjectiveDTO
+import com.darius.crux.network.ReadinessDTO
+import com.darius.crux.network.TrainingGridDTO
 import com.darius.crux.network.UpcomingEventDTO
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,12 +27,22 @@ data class DashboardUiState(
 class DashboardViewModel : ViewModel() {
     private val repository = DashboardRepository()
     private val githubRepository = GithubRepository()
+    private val objectiveRepository = ObjectiveRepository()
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     private val _heatmap = MutableStateFlow<GithubHeatmapDTO?>(null)
     val heatmap: StateFlow<GithubHeatmapDTO?> = _heatmap.asStateFlow()
+
+    private val _readiness = MutableStateFlow<ReadinessDTO?>(null)
+    val readiness: StateFlow<ReadinessDTO?> = _readiness.asStateFlow()
+
+    private val _trainingGrid = MutableStateFlow<TrainingGridDTO?>(null)
+    val trainingGrid: StateFlow<TrainingGridDTO?> = _trainingGrid.asStateFlow()
+
+    private val _objective = MutableStateFlow<ObjectiveDTO?>(null)
+    val objective: StateFlow<ObjectiveDTO?> = _objective.asStateFlow()
 
     // NEXT UP agenda and daily quote load independently of the main dashboard
     // fetch above — either can fail/lag without blocking or gating the rest.
@@ -55,6 +69,9 @@ class DashboardViewModel : ViewModel() {
         loadQuote()
         loadMood()
         loadHeatmap()
+        loadReadiness()
+        loadTrainingGrid()
+        loadObjective()
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
             when (val result = repository.getDashboard()) {
@@ -119,6 +136,45 @@ class DashboardViewModel : ViewModel() {
         viewModelScope.launch {
             _heatmap.value = try {
                 when (val result = githubRepository.getHeatmap(weeks = 20)) {
+                    is RepoResult.Success -> result.data
+                    is RepoResult.Error -> null
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    private fun loadReadiness() {
+        viewModelScope.launch {
+            _readiness.value = try {
+                when (val result = repository.getReadiness()) {
+                    is RepoResult.Success -> result.data
+                    is RepoResult.Error -> null
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    private fun loadTrainingGrid() {
+        viewModelScope.launch {
+            _trainingGrid.value = try {
+                when (val result = repository.getTrainingGrid(weeks = 20)) {
+                    is RepoResult.Success -> result.data
+                    is RepoResult.Error -> null
+                }
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    private fun loadObjective() {
+        viewModelScope.launch {
+            _objective.value = try {
+                when (val result = objectiveRepository.getCurrent()) {
                     is RepoResult.Success -> result.data
                     is RepoResult.Error -> null
                 }

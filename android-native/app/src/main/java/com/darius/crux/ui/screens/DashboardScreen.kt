@@ -1,9 +1,12 @@
 package com.darius.crux.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,6 +25,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.darius.crux.data.model.Conditions
 import com.darius.crux.data.model.DashboardData
 import com.darius.crux.network.GithubHeatmapDTO
+import com.darius.crux.network.ObjectiveDTO
+import com.darius.crux.network.ReadinessDTO
+import com.darius.crux.network.TrainingGridDTO
 import com.darius.crux.network.UpcomingEventDTO
 import com.darius.crux.ui.components.AgendaBlock
 import com.darius.crux.ui.components.AltiInstrument
@@ -33,11 +39,15 @@ import com.darius.crux.ui.components.LoadingStrip
 import com.darius.crux.ui.components.MeetSheetScreen
 import com.darius.crux.ui.components.MoodTrace
 import com.darius.crux.ui.components.RailTape
+import com.darius.crux.ui.components.ReadinessGauge
 import com.darius.crux.ui.components.SectionHeader
 import com.darius.crux.ui.components.StripInstrument
+import com.darius.crux.ui.components.TrainingGrid
+import com.darius.crux.ui.theme.ChalkShade
 import com.darius.crux.ui.theme.GateRed
 import com.darius.crux.ui.theme.Graphite
 import com.darius.crux.ui.theme.Ink
+import com.darius.crux.ui.theme.Scree
 import com.darius.crux.ui.theme.Space
 import com.darius.crux.ui.theme.Steel
 import com.darius.crux.ui.viewmodel.DashboardViewModel
@@ -48,6 +58,7 @@ fun DashboardScreen(
     onOpenSignals: () -> Unit = {},
     onOpenPhilosophy: () -> Unit = {},
     onOpenMeetings: () -> Unit = {},
+    onOpenObjective: () -> Unit = {},
     viewModel: DashboardViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -56,6 +67,9 @@ fun DashboardScreen(
     val quoteAuthor by viewModel.quoteAuthor.collectAsState()
     val mood by viewModel.mood.collectAsState()
     val heatmap by viewModel.heatmap.collectAsState()
+    val readiness by viewModel.readiness.collectAsState()
+    val trainingGrid by viewModel.trainingGrid.collectAsState()
+    val objective by viewModel.objective.collectAsState()
     var expandedAgendaIndex by remember { mutableStateOf<Int?>(null) }
 
     MeetSheetScreen(
@@ -79,6 +93,11 @@ fun DashboardScreen(
             HairlineRule()
         }
 
+        objective?.let { obj ->
+            ObjectiveTeaser(obj, onOpenObjective)
+            HairlineRule()
+        }
+
         when {
             uiState.isLoading && uiState.data == null -> LoadingStrip()
             uiState.error != null && uiState.data == null ->
@@ -93,6 +112,7 @@ fun DashboardScreen(
                 moodPhrase = mood,
                 onOpenSignals = onOpenSignals,
                 onOpenMeetings = onOpenMeetings,
+                readiness = readiness,
             )
         }
 
@@ -101,6 +121,14 @@ fun DashboardScreen(
             if (h.source != "none") {
                 HairlineRule()
                 CodeBlock(h)
+            }
+        }
+
+        // TRAINING — the discipline grid alongside CODE.
+        trainingGrid?.let { tg ->
+            if (tg.days.isNotEmpty()) {
+                HairlineRule()
+                TrainingBlock(tg)
             }
         }
 
@@ -123,6 +151,43 @@ private fun CodeBlock(h: GithubHeatmapDTO) {
 }
 
 @Composable
+private fun TrainingBlock(tg: TrainingGridDTO) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.sectionV)) {
+        SectionHeader("TRAINING", subtitle = "${tg.active_days} DAYS", accent = Steel)
+        Spacer(Modifier.height(Space.md))
+        TrainingGrid(tg.days)
+        Spacer(Modifier.height(Space.sm))
+        Text(
+            "${tg.total_sessions} SESSIONS · ${tg.active_days} ACTIVE DAYS",
+            style = MaterialTheme.typography.labelMedium.copy(color = Ink),
+        )
+    }
+}
+
+@Composable
+private fun ObjectiveTeaser(obj: ObjectiveDTO, onOpen: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().clickable(onClick = onOpen)
+            .padding(horizontal = Space.screenH, vertical = Space.lg),
+    ) {
+        SectionHeader(
+            "OBJECTIVE",
+            subtitle = obj.name,
+            accent = GateRed,
+            trailing = {
+                Text("${obj.days_to_go.coerceAtLeast(0)} DAYS →",
+                    style = MaterialTheme.typography.labelSmall.copy(color = GateRed))
+            },
+        )
+        Spacer(Modifier.height(Space.md))
+        val frac = if (obj.vert_goal_m > 0) (obj.banked_m.toFloat() / obj.vert_goal_m).coerceIn(0f, 1f) else 0f
+        Box(Modifier.fillMaxWidth().height(Space.sm).background(ChalkShade)) {
+            Box(Modifier.fillMaxWidth(frac).fillMaxHeight().background(Scree))
+        }
+    }
+}
+
+@Composable
 private fun DashboardBody(
     data: DashboardData,
     agenda: List<UpcomingEventDTO>?,
@@ -131,6 +196,7 @@ private fun DashboardBody(
     moodPhrase: String?,
     onOpenSignals: () -> Unit,
     onOpenMeetings: () -> Unit,
+    readiness: ReadinessDTO?,
 ) {
     // Hero — the one Anton readout: the week's aerobic base, the rebuild's headline number.
     HeroReadout(
@@ -149,6 +215,15 @@ private fun DashboardBody(
         )
     }
     HairlineRule()
+
+    readiness?.let {
+        Column(Modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.sectionV)) {
+            SectionHeader("READINESS")
+            Spacer(Modifier.height(Space.md))
+            ReadinessGauge(it)
+        }
+        HairlineRule()
+    }
 
     // THE RAIL — signature element
     Column(Modifier.padding(horizontal = Space.screenH, vertical = Space.lg)) {

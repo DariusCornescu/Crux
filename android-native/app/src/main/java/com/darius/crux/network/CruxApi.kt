@@ -75,4 +75,16 @@ interface CruxApi {
 
     @GET("github/heatmap")
     suspend fun getGithubHeatmap(@Query("weeks") weeks: Int = 53): Response<GithubHeatmapDTO>
+
+    @GET("objective/current")
+    suspend fun getObjective(): Response<ObjectiveDTO?>
+
+    @POST("objective")
+    suspend fun setObjective(@Body body: ObjectiveInDTO): Response<ObjectiveDTO>
+
+    @GET("training/grid")
+    suspend fun getTrainingGrid(@Query("weeks") weeks: Int = 20): Response<TrainingGridDTO>
+
+    @GET("readiness/today")
+    suspend fun getReadiness(): Response<ReadinessDTO>
 }

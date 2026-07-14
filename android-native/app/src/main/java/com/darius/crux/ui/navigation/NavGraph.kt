@@ -30,6 +30,7 @@ import com.darius.crux.ui.components.HairlineRule
 import com.darius.crux.ui.screens.ChatScreen
 import com.darius.crux.ui.screens.DashboardScreen
 import com.darius.crux.ui.screens.MeetingsScreen
+import com.darius.crux.ui.screens.ObjectiveScreen
 import com.darius.crux.ui.screens.PhilosophyScreen
 import com.darius.crux.ui.screens.ReportDetailScreen
 import com.darius.crux.ui.screens.ReportsScreen
@@ -65,6 +66,7 @@ fun NavGraph() {
                     onOpenSignals = { nav.navigate("signals") { launchSingleTop = true } },
                     onOpenPhilosophy = { nav.navigate("philosophy") { launchSingleTop = true } },
                     onOpenMeetings = { nav.navigate("meetings") { launchSingleTop = true } },
+                    onOpenObjective = { nav.navigate("objective") { launchSingleTop = true } },
                 )
             }
             composable("chat") { ChatScreen() }
@@ -80,6 +82,7 @@ fun NavGraph() {
             composable("signals") { SignalsScreen(onBack = { nav.popBackStack() }) }
             composable("philosophy") { PhilosophyScreen(onBack = { nav.popBackStack() }) }
             composable("meetings") { MeetingsScreen(onBack = { nav.popBackStack() }) }
+            composable("objective") { ObjectiveScreen(onBack = { nav.popBackStack() }) }
             composable("settings") { SettingsScreen() }
         }
     }
@@ -97,7 +100,7 @@ private fun BezelNav(nav: NavHostController) {
             DESTS.forEach { dest ->
                 val selected = currentRoute == dest.route ||
                     (dest.route == "reports" && currentRoute?.startsWith("reports/") == true) ||
-                    (dest.route == "dashboard" && currentRoute in setOf("signals", "philosophy", "meetings"))
+                    (dest.route == "dashboard" && currentRoute in setOf("signals", "philosophy", "meetings", "objective"))
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier

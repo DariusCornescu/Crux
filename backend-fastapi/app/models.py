@@ -233,3 +233,19 @@ class DailyContribution(Base):
     day: Mapped[date] = mapped_column(Date, unique=True, index=True)
     count: Mapped[int] = mapped_column(Integer, default=0)
     source: Mapped[str] = mapped_column(String(16), default="events")  # graphql | events
+
+
+class Objective(Base):
+    """A training goal — a summit + date. Vertical banked is accumulated from
+    logged activities since start_date; days-to-go counts down to target_date.
+    Single active objective at a time."""
+    __tablename__ = "objectives"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(128))
+    elevation_m: Mapped[int | None] = mapped_column(Integer, nullable=True)  # summit height (display)
+    target_date: Mapped[date] = mapped_column(Date)
+    vert_goal_m: Mapped[int] = mapped_column(Integer)         # vertical to bank in training
+    start_date: Mapped[date] = mapped_column(Date)            # banking counts from here
+    active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=datetime.utcnow)

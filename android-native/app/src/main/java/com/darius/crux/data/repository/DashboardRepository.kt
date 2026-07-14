@@ -6,6 +6,8 @@ import com.darius.crux.network.RetrofitClient
 import com.darius.crux.network.CruxApi
 import com.darius.crux.network.MoodDTO
 import com.darius.crux.network.QuoteDTO
+import com.darius.crux.network.ReadinessDTO
+import com.darius.crux.network.TrainingGridDTO
 import com.darius.crux.network.UpcomingEventDTO
 import com.darius.crux.network.toModel
 import kotlinx.coroutines.Dispatchers
@@ -74,6 +76,34 @@ class DashboardRepository(private val api: CruxApi = RetrofitClient.api) {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Network error: ${e.message}")
+            RepoResult.Error("NO SIGNAL — ${e.message ?: "network error"}")
+        }
+    }
+
+    /** Training contribution grid — independent of the main dashboard load. */
+    suspend fun getTrainingGrid(weeks: Int = 20): RepoResult<TrainingGridDTO> = withContext(Dispatchers.IO) {
+        try {
+            val response = api.getTrainingGrid(weeks)
+            if (response.isSuccessful && response.body() != null) {
+                RepoResult.Success(response.body()!!)
+            } else {
+                RepoResult.Error("SERVER ${response.code()}")
+            }
+        } catch (e: Exception) {
+            RepoResult.Error("NO SIGNAL — ${e.message ?: "network error"}")
+        }
+    }
+
+    /** Today's readiness — independent of the main dashboard load. */
+    suspend fun getReadiness(): RepoResult<ReadinessDTO> = withContext(Dispatchers.IO) {
+        try {
+            val response = api.getReadiness()
+            if (response.isSuccessful && response.body() != null) {
+                RepoResult.Success(response.body()!!)
+            } else {
+                RepoResult.Error("SERVER ${response.code()}")
+            }
+        } catch (e: Exception) {
             RepoResult.Error("NO SIGNAL — ${e.message ?: "network error"}")
         }
     }
