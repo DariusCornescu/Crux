@@ -19,13 +19,15 @@ import kotlinx.coroutines.launch
  * Inert until Firebase is configured: add google-services.json to app/ and
  * uncomment the google-services plugin lines in both build.gradle.kts files
  * (see README). Notification-type FCM messages are shown by the system when
- * the app is backgrounded; this handles the foreground case.
+ * the app is backgrounded; this handles the foreground case and routes by
+ * message `type` (report vs meeting) to its own channel.
  */
 class CruxMessagingService : FirebaseMessagingService() {
 
     companion object {
         const val TAG = "CruxFCM"
-        const val CHANNEL_ID = "reports"
+        const val CHANNEL_REPORTS = "reports"
+        const val CHANNEL_MEETINGS = "meetings"
     }
 
     override fun onNewToken(token: String) {
@@ -42,14 +44,20 @@ class CruxMessagingService : FirebaseMessagingService() {
         val manager = NotificationManagerCompat.from(this)
         if (!manager.areNotificationsEnabled()) return
 
-        val channel = NotificationChannel(
-            CHANNEL_ID, "Weekly reports", NotificationManager.IMPORTANCE_DEFAULT)
-        manager.createNotificationChannel(channel)
+        val isMeeting = message.data["type"] == "meeting"
+        val channelId = if (isMeeting) CHANNEL_MEETINGS else CHANNEL_REPORTS
+        val channelName = if (isMeeting) "Meeting reminders" else "Weekly reports"
+        manager.createNotificationChannel(
+            NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_DEFAULT),
+        )
+
+        val notifId = (message.data["event_id"] ?: message.data["report_id"])?.toIntOrNull()
+            ?: message.messageId?.hashCode() ?: 1
 
         try {
             manager.notify(
-                message.data["report_id"]?.toIntOrNull() ?: 1,
-                NotificationCompat.Builder(this, CHANNEL_ID)
+                notifId,
+                NotificationCompat.Builder(this, channelId)
                     .setSmallIcon(R.drawable.ic_launcher_foreground)
                     .setContentTitle(title)
                     .setContentText(body)

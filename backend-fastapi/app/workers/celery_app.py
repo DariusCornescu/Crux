@@ -41,5 +41,9 @@ celery_app.conf.beat_schedule["sync-github"] = {
     "task": "app.workers.tasks.sync_github",
     "schedule": crontab(minute=25),  # hourly, offset from calendar's :15
 }
+celery_app.conf.beat_schedule["meeting-reminders"] = {
+    "task": "app.workers.tasks.meeting_reminders",
+    "schedule": crontab(minute="*/5"),  # push reminders before imminent meetings
+}
 
 celery_app.autodiscover_tasks(["app.workers"])

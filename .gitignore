@@ -13,3 +13,6 @@ secrets/
 backend-fastapi/tests/test.db
 *.db
 .worktrees/
+# Firebase — client config + service-account key, never commit
+/android-native/app/google-services.json
+backend-fastapi/fcm-service-account.json

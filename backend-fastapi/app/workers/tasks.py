@@ -91,6 +91,20 @@ def sync_github() -> int:
 
 
 @celery_app.task
+def meeting_reminders() -> int:
+    from app import push
+    from app.config import get_settings
+
+    if not get_settings().fcm_service_account_json_path:
+        return 0  # FCM not configured — nothing to do
+    db = SessionLocal()
+    try:
+        return push.send_meeting_reminders(db)
+    finally:
+        db.close()
+
+
+@celery_app.task
 def prewarm_philosophy() -> int:
     """Pre-generate today's mood, quote and reflection so the app never hits the
     cold first-of-day LLM path. Mood first — the reflection depends on it."""

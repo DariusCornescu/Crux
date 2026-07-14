@@ -190,6 +190,7 @@ class CalendarEvent(Base):
     subject_hash: Mapped[str] = mapped_column(String(64))
     subject: Mapped[str | None] = mapped_column(String(256), nullable=True)
     source: Mapped[str] = mapped_column(String(16), default="ics")
+    reminded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
 class DailyQuote(Base):
