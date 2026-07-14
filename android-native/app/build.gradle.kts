@@ -2,8 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    // Step 7: uncomment after dropping google-services.json into app/
-    // id("com.google.gms.google-services")
+    id("com.google.gms.google-services")
 }
 
 android {
