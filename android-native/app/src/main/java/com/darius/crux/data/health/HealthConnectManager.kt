@@ -20,6 +20,20 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
+/** Per-sync diagnostics: raw record counts per type (before ingest) so the UI can
+ *  report exactly which Health Connect data types are empty. [ingested] is the
+ *  backend-accepted sample count, or -1 when HC is unavailable / not permitted. */
+data class HealthSyncResult(
+    val ingested: Int,
+    val sleep: Int = 0,
+    val resting: Int = 0,
+    val heartRate: Int = 0,
+    val hrv: Int = 0,
+    val steps: Int = 0,
+) {
+    val anyData: Boolean get() = sleep + resting + heartRate + hrv + steps > 0
+}
+
 /**
  * Reads sleep, resting HR and HRV from Health Connect and posts them to the
  * backend wellness ingest (source = health_connect), which rolls up into the
@@ -48,19 +62,27 @@ class HealthConnectManager(private val context: Context) {
                 .permissionController.getGrantedPermissions().containsAll(PERMISSIONS)
         }.getOrDefault(false)
 
-    /** Read the last [days] of health data and post samples. Returns #ingested, or -1 on failure. */
-    suspend fun sync(days: Long = 14): Int {
-        if (!available()) return -1
+    /** Read the last [days] of health data and post samples. Returns per-type raw
+     *  record counts + #ingested (or -1 when unavailable / not permitted). */
+    suspend fun sync(days: Long = 14): HealthSyncResult {
+        if (!available()) return HealthSyncResult(ingested = -1)
         val client = HealthConnectClient.getOrCreate(context)
         val granted = runCatching { client.permissionController.getGrantedPermissions() }.getOrNull()
-        if (granted == null || !granted.containsAll(PERMISSIONS)) return -1
+        if (granted == null || !granted.containsAll(PERMISSIONS)) return HealthSyncResult(ingested = -1)
 
         val end = Instant.now()
         val range = TimeRangeFilter.between(end.minus(days, ChronoUnit.DAYS), end)
         val samples = mutableListOf<WellnessSampleDTO>()
+        var sleepN = 0
+        var restingN = 0
+        var heartRateN = 0
+        var hrvN = 0
+        var stepsN = 0
 
         runCatching {
-            client.readRecords(ReadRecordsRequest(SleepSessionRecord::class, range)).records.forEach { s ->
+            val recs = client.readRecords(ReadRecordsRequest(SleepSessionRecord::class, range)).records
+            sleepN = recs.size
+            recs.forEach { s ->
                 val minutes = Duration.between(s.startTime, s.endTime).toMinutes()
                 if (minutes > 0) {
                     samples.add(WellnessSampleDTO(s.endTime.toString(), "sleep_minutes", minutes.toDouble()))
@@ -71,6 +93,7 @@ class HealthConnectManager(private val context: Context) {
         val resting = runCatching {
             client.readRecords(ReadRecordsRequest(RestingHeartRateRecord::class, range)).records
         }.getOrDefault(emptyList())
+        restingN = resting.size
         if (resting.isNotEmpty()) {
             resting.forEach { r ->
                 samples.add(WellnessSampleDTO(r.time.toString(), "resting_hr", r.beatsPerMinute.toDouble()))
@@ -80,7 +103,9 @@ class HealthConnectManager(private val context: Context) {
             // Take the per-day minimum bpm as a resting-HR proxy.
             runCatching {
                 val perDayMin = HashMap<LocalDate, Pair<Instant, Long>>()
-                client.readRecords(ReadRecordsRequest(HeartRateRecord::class, range)).records.forEach { rec ->
+                val recs = client.readRecords(ReadRecordsRequest(HeartRateRecord::class, range)).records
+                heartRateN = recs.size
+                recs.forEach { rec ->
                     rec.samples.forEach { s ->
                         val day = s.time.atZone(ZoneId.systemDefault()).toLocalDate()
                         val cur = perDayMin[day]
@@ -94,7 +119,9 @@ class HealthConnectManager(private val context: Context) {
         }
 
         runCatching {
-            client.readRecords(ReadRecordsRequest(HeartRateVariabilityRmssdRecord::class, range)).records.forEach { h ->
+            val recs = client.readRecords(ReadRecordsRequest(HeartRateVariabilityRmssdRecord::class, range)).records
+            hrvN = recs.size
+            recs.forEach { h ->
                 samples.add(WellnessSampleDTO(h.time.toString(), "hrv_ms", h.heartRateVariabilityMillis))
             }
         }.onFailure { Log.w(TAG, "hrv read: ${it.message}") }
@@ -105,7 +132,9 @@ class HealthConnectManager(private val context: Context) {
         runCatching {
             val perDayTotal = HashMap<LocalDate, Long>()
             val perDayLatest = HashMap<LocalDate, Instant>()
-            client.readRecords(ReadRecordsRequest(StepsRecord::class, range)).records.forEach { rec ->
+            val recs = client.readRecords(ReadRecordsRequest(StepsRecord::class, range)).records
+            stepsN = recs.size
+            recs.forEach { rec ->
                 val day = rec.startTime.atZone(ZoneId.systemDefault()).toLocalDate()
                 perDayTotal[day] = (perDayTotal[day] ?: 0L) + rec.count
                 val prev = perDayLatest[day]
@@ -117,10 +146,18 @@ class HealthConnectManager(private val context: Context) {
             }
         }.onFailure { Log.w(TAG, "steps read: ${it.message}") }
 
-        if (samples.isEmpty()) return 0
-        return runCatching {
+        val ingested = if (samples.isEmpty()) 0 else runCatching {
             val resp = RetrofitClient.api.ingestWellness(WellnessBatchDTO(samples))
             if (resp.isSuccessful) resp.body()?.ingested ?: 0 else -1
         }.getOrDefault(-1)
+
+        return HealthSyncResult(
+            ingested = ingested,
+            sleep = sleepN,
+            resting = restingN,
+            heartRate = heartRateN,
+            hrv = hrvN,
+            steps = stepsN,
+        )
     }
 }

@@ -86,12 +86,14 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
     fun syncHealth() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(syncMessage = "SYNCING HEALTH…", error = null)
-            val n = health.sync()
+            val r = health.sync()
+            val counts = "SLP${r.sleep} RHR${r.resting} HR${r.heartRate} HRV${r.hrv} STP${r.steps}"
             _uiState.value = _uiState.value.copy(
                 syncMessage = when {
-                    n > 0 -> "HEALTH +$n SAMPLES"
-                    n == 0 -> "NO NEW HEALTH DATA"
-                    else -> "HEALTH UNAVAILABLE / NOT ALLOWED"
+                    r.ingested > 0 -> "HEALTH +${r.ingested} SAMPLES · $counts"
+                    r.ingested < 0 -> "HEALTH UNAVAILABLE / NOT ALLOWED"
+                    r.anyData -> "READ $counts · 0 INGESTED"
+                    else -> "HEALTH CONNECT EMPTY · $counts · NOTHING IS WRITING TO IT"
                 },
             )
         }
