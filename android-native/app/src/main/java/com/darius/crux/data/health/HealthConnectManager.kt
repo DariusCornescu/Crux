@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.permission.HealthPermission
+import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
 import androidx.health.connect.client.records.RestingHeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
@@ -14,6 +15,8 @@ import com.darius.crux.network.WellnessBatchDTO
 import com.darius.crux.network.WellnessSampleDTO
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
 
 /**
@@ -29,6 +32,7 @@ class HealthConnectManager(private val context: Context) {
         val PERMISSIONS = setOf(
             HealthPermission.getReadPermission(SleepSessionRecord::class),
             HealthPermission.getReadPermission(RestingHeartRateRecord::class),
+            HealthPermission.getReadPermission(HeartRateRecord::class),
             HealthPermission.getReadPermission(HeartRateVariabilityRmssdRecord::class),
         )
     }
@@ -62,11 +66,30 @@ class HealthConnectManager(private val context: Context) {
             }
         }.onFailure { Log.w(TAG, "sleep read: ${it.message}") }
 
-        runCatching {
-            client.readRecords(ReadRecordsRequest(RestingHeartRateRecord::class, range)).records.forEach { r ->
+        val resting = runCatching {
+            client.readRecords(ReadRecordsRequest(RestingHeartRateRecord::class, range)).records
+        }.getOrDefault(emptyList())
+        if (resting.isNotEmpty()) {
+            resting.forEach { r ->
                 samples.add(WellnessSampleDTO(r.time.toString(), "resting_hr", r.beatsPerMinute.toDouble()))
             }
-        }.onFailure { Log.w(TAG, "rhr read: ${it.message}") }
+        } else {
+            // Fallback: Samsung Health writes continuous HeartRateRecord, not resting HR.
+            // Take the per-day minimum bpm as a resting-HR proxy.
+            runCatching {
+                val perDayMin = HashMap<LocalDate, Pair<Instant, Long>>()
+                client.readRecords(ReadRecordsRequest(HeartRateRecord::class, range)).records.forEach { rec ->
+                    rec.samples.forEach { s ->
+                        val day = s.time.atZone(ZoneId.systemDefault()).toLocalDate()
+                        val cur = perDayMin[day]
+                        if (cur == null || s.beatsPerMinute < cur.second) perDayMin[day] = s.time to s.beatsPerMinute
+                    }
+                }
+                perDayMin.values.forEach { (time, bpm) ->
+                    samples.add(WellnessSampleDTO(time.toString(), "resting_hr", bpm.toDouble()))
+                }
+            }.onFailure { Log.w(TAG, "hr fallback: ${it.message}") }
+        }
 
         runCatching {
             client.readRecords(ReadRecordsRequest(HeartRateVariabilityRmssdRecord::class, range)).records.forEach { h ->
