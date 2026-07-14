@@ -93,10 +93,13 @@ fun DashboardScreen(
             HairlineRule()
         }
 
-        objective?.let { obj ->
-            ObjectiveTeaser(obj, onOpenObjective)
-            HairlineRule()
+        val objectiveNow = objective
+        if (objectiveNow != null) {
+            ObjectiveTeaser(objectiveNow, onOpenObjective)
+        } else {
+            ObjectiveSetPrompt(onOpenObjective)
         }
+        HairlineRule()
 
         when {
             uiState.isLoading && uiState.data == null -> LoadingStrip()
@@ -160,6 +163,21 @@ private fun TrainingBlock(tg: TrainingGridDTO) {
         Text(
             "${tg.total_sessions} SESSIONS · ${tg.active_days} ACTIVE DAYS",
             style = MaterialTheme.typography.labelMedium.copy(color = Ink),
+        )
+    }
+}
+
+@Composable
+private fun ObjectiveSetPrompt(onOpen: () -> Unit) {
+    Column(
+        Modifier.fillMaxWidth().clickable(onClick = onOpen)
+            .padding(horizontal = Space.screenH, vertical = Space.lg),
+    ) {
+        SectionHeader(
+            "OBJECTIVE",
+            trailing = {
+                Text("SET A GOAL →", style = MaterialTheme.typography.labelSmall.copy(color = GateRed))
+            },
         )
     }
 }
