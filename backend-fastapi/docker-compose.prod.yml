@@ -5,6 +5,16 @@
 services:
   api:
     ports: !reset []
+    volumes:
+      - ./fcm-service-account.json:/srv/fcm-service-account.json:ro
+
+  worker:
+    volumes:
+      - ./fcm-service-account.json:/srv/fcm-service-account.json:ro
+
+  beat:
+    volumes:
+      - ./fcm-service-account.json:/srv/fcm-service-account.json:ro
 
   caddy:
     image: caddy:2-alpine
