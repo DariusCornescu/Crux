@@ -1,13 +1,15 @@
-"""Daily motivational line — LLM-personalized from the week's training, cached
-per day in daily_quotes, deterministic static fallback offline."""
+"""Daily motivational line — LLM-personalized from the week's training, the current
+music mood, and a rotating daily philosophical lens, cached per day in daily_quotes.
+The lens + mood keep the line varying day to day even when training is flat.
+Deterministic static fallback offline."""
 import logging
 from datetime import date, datetime, time, timedelta, timezone
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import llm
-from app.models import Activity, DailyQuote, EffortMode
+from app.models import Activity, DailyMood, DailyQuote, EffortMode
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +28,37 @@ STATIC_QUOTES = [
     "Today's discipline is next season's freedom.",
 ]
 
-SYSTEM = """Write ONE short motivational line (max 120 characters) for an athlete
-rebuilding aerobic base and preparing for mountaineering. Reference the training
-numbers given if useful. No quotes around it, no emoji, no hashtags. Dry,
-timing-sheet tone — not cheerleading."""
+# Rotating daily lenses — the angle the day's line is written through, so the
+# philosophy shifts day to day even during a quiet training block.
+LENSES = [
+    "discipline over motivation",
+    "patience and the long base",
+    "the mountain's indifference",
+    "rest as part of the work",
+    "hunger for the climb",
+    "the body as an honest ledger",
+    "consistency compounding quietly",
+    "stillness before effort",
+    "breath and rhythm",
+    "the gap between knowing and doing",
+    "small repeatable habits",
+    "the sprinter learning to wait",
+    "weather and things you cannot control",
+    "showing up on the dull days",
+]
+
+SYSTEM = """Write ONE short line (max 120 characters) of dry, grounded training
+philosophy for an athlete — a former 60m sprint champion rebuilding aerobic base and
+preparing for the mountains. You are given the week's training numbers, days since
+the last session, the current music mood, and TODAY'S LENS. Write THROUGH the lens
+and let the mood colour it, so each day reads differently. If training is quiet, treat
+rest and patience as part of the work — never shame inactivity, and never reuse
+yesterday's framing. No surrounding quotes, no emoji, no hashtags. Not cheerleading."""
+
+
+def lens_for(day: date) -> str:
+    """Deterministic rotating lens — cycles through LENSES by day of year."""
+    return LENSES[day.timetuple().tm_yday % len(LENSES)]
 
 
 def _week_snapshot(db: Session) -> str:
@@ -43,6 +72,28 @@ def _week_snapshot(db: Session) -> str:
             f"{int(vert)} m vertical under load.")
 
 
+def _days_since_last_session(db: Session) -> str:
+    last = db.scalar(select(func.max(Activity.start_time)))
+    if last is None:
+        return "No training sessions logged yet."
+    days = (datetime.now(timezone.utc) - last).days
+    return f"Last logged session was {days} days ago."
+
+
+def _todays_mood(db: Session) -> str | None:
+    row = db.scalar(select(DailyMood).where(DailyMood.day == date.today()))
+    return row.phrase if row else None
+
+
+def _context(db: Session) -> str:
+    parts = [_week_snapshot(db), _days_since_last_session(db)]
+    mood = _todays_mood(db)
+    if mood:
+        parts.append(f"Current music mood: {mood}.")
+    parts.append(f"Today's lens: {lens_for(date.today())}.")
+    return "\n".join(parts)
+
+
 def get_today(db: Session) -> DailyQuote:
     today = date.today()
     row = db.scalar(select(DailyQuote).where(DailyQuote.day == today))
@@ -52,7 +103,7 @@ def get_today(db: Session) -> DailyQuote:
     if llm.is_configured():
         try:
             text = llm.complete(system=SYSTEM,
-                                messages=[{"role": "user", "content": _week_snapshot(db)}],
+                                messages=[{"role": "user", "content": _context(db)}],
                                 max_tokens=160).strip().strip('"')
             source = "llm"
         except Exception as e:

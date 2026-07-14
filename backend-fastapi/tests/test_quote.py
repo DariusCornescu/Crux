@@ -58,3 +58,15 @@ def test_quote_archive_empty_ok(client):
     r = client.get("/quote/archive")
     assert r.status_code == 200
     assert r.json() == []
+
+
+def test_lens_rotates_by_day():
+    from datetime import date, timedelta
+
+    from app import quotes
+
+    d = date(2026, 7, 14)
+    assert quotes.lens_for(d) in quotes.LENSES
+    assert quotes.lens_for(d) != quotes.lens_for(d + timedelta(days=1))   # consecutive days differ
+    assert quotes.lens_for(d) == quotes.lens_for(d)                       # deterministic
+    assert quotes.lens_for(d) == quotes.lens_for(d + timedelta(days=len(quotes.LENSES)))  # cycles
