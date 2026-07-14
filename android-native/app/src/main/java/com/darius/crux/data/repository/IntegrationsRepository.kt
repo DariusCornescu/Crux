@@ -52,4 +52,18 @@ class IntegrationsRepository(private val api: CruxApi = RetrofitClient.api) {
             RepoResult.Error("NO SIGNAL — ${e.message ?: "network error"}")
         }
     }
+
+    /** Fire a test push to all registered devices. Returns #delivered. */
+    suspend fun triggerPushTest(): RepoResult<Int> = withContext(Dispatchers.IO) {
+        try {
+            val response = api.pushTest()
+            if (response.isSuccessful && response.body() != null) {
+                RepoResult.Success(response.body()!!.synced)
+            } else {
+                RepoResult.Error("SERVER ${response.code()}")
+            }
+        } catch (e: Exception) {
+            RepoResult.Error("NO SIGNAL — ${e.message ?: "network error"}")
+        }
+    }
 }

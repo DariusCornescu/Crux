@@ -63,4 +63,18 @@ class SettingsViewModel : ViewModel() {
             }
         }
     }
+
+    fun testPush() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(syncMessage = "SENDING TEST…", error = null)
+            when (val result = repository.triggerPushTest()) {
+                is RepoResult.Success -> _uiState.value = _uiState.value.copy(
+                    syncMessage = if (result.data > 0) "TEST SENT — CHECK YOUR PHONE"
+                    else "NO DEVICES REGISTERED YET",
+                )
+                is RepoResult.Error -> _uiState.value =
+                    _uiState.value.copy(syncMessage = null, error = result.message)
+            }
+        }
+    }
 }

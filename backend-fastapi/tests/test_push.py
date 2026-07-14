@@ -50,3 +50,16 @@ def test_meeting_reminders_skips_past_events(db, monkeypatch, fcm_configured):
     db.add(_event(now, -20, "Already started", "h3"))  # start < now — excluded
     db.commit()
     assert push.send_meeting_reminders(db) == 0
+
+
+def test_push_test_endpoint_unconfigured_400(client):
+    get_settings.cache_clear()
+    assert client.post("/integrations/push/test").status_code == 400
+
+
+def test_push_test_endpoint_sends(client, db, monkeypatch, fcm_configured):
+    monkeypatch.setattr(push, "_push_to_tokens", lambda *a, **k: 2)
+    db.add(DeviceToken(token="t1"))
+    db.commit()
+    r = client.post("/integrations/push/test")
+    assert r.status_code == 200 and r.json()["synced"] == 2

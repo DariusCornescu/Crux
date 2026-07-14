@@ -34,6 +34,9 @@ interface CruxApi {
     @POST("integrations/{provider}/sync")
     suspend fun triggerSync(@Path("provider") provider: String): Response<SyncResultDTO>
 
+    @POST("integrations/push/test")
+    suspend fun pushTest(): Response<SyncResultDTO>
+
     @GET("chat/history")
     suspend fun getChatHistory(@Query("limit") limit: Int = 50): Response<List<ChatMessageDTO>>
 

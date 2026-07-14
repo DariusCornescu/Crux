@@ -10,10 +10,10 @@ from fastapi.responses import HTMLResponse
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app import calendar_sync, genres, github, spotify, strava
+from app import calendar_sync, genres, github, push, spotify, strava
 from app.config import get_settings
 from app.database import get_db
-from app.models import OAuthToken
+from app.models import DeviceToken, OAuthToken
 from app.schemas import IntegrationState, IntegrationsStatus, SyncResult
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
@@ -156,3 +156,17 @@ def github_sync(db: Session = Depends(get_db)):
         return SyncResult(synced=github.sync(db))
     except RuntimeError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ---- Push (test delivery) ----
+
+@router.post("/push/test", response_model=SyncResult)
+def push_test(db: Session = Depends(get_db)):
+    """Fire a test notification to every registered device. synced = #delivered."""
+    path = get_settings().fcm_service_account_json_path
+    if not path:
+        raise HTTPException(status_code=400, detail="FCM not configured")
+    tokens = db.scalars(select(DeviceToken)).all()
+    sent = push._push_to_tokens(path, tokens, "CRUX — TEST",
+                                "Notifications are working.", {"type": "meeting"})
+    return SyncResult(synced=sent)

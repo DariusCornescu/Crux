@@ -69,6 +69,8 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             HairlineRule()
             GithubRow(state = uiState.status?.github, onSync = { viewModel.sync("github") })
             HairlineRule()
+            NotificationsRow(onTest = { viewModel.testPush() })
+            HairlineRule()
             StaticRow("HEALTH CONNECT", "LATER STEP")
             HairlineRule()
         }
@@ -153,6 +155,26 @@ private fun GithubRow(state: IntegrationState?, onSync: () -> Unit) {
                 modifier = Modifier.clickable(onClick = onSync),
             )
         }
+    }
+}
+
+/** Meeting-reminder notifications: a tap sends a test push to this device. */
+@Composable
+private fun NotificationsRow(onTest: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = Space.screenH, vertical = Space.lg),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column {
+            Text("NOTIFICATIONS", style = MaterialTheme.typography.labelLarge)
+            Text("MEETING REMINDERS", style = MaterialTheme.typography.labelSmall.copy(color = Graphite))
+        }
+        Text(
+            "SEND TEST",
+            style = MaterialTheme.typography.titleSmall.copy(color = Steel),
+            modifier = Modifier.clickable(onClick = onTest),
+        )
     }
 }
 
