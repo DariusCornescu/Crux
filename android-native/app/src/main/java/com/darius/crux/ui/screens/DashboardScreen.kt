@@ -161,7 +161,7 @@ private fun TrainingBlock(tg: TrainingGridDTO) {
         TrainingGrid(tg.days)
         Spacer(Modifier.height(Space.sm))
         Text(
-            "${tg.total_sessions} SESSIONS · ${tg.active_days} ACTIVE DAYS",
+            "${tg.total_sessions} SESSIONS · ${String.format(Locale.US, "%.1f", tg.total_km)} KM · ${tg.active_days} DAYS",
             style = MaterialTheme.typography.labelMedium.copy(color = Ink),
         )
     }

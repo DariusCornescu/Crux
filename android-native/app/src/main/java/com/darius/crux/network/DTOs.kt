@@ -192,6 +192,7 @@ data class TrainingGridDTO(
     val days: List<TrainingDayDTO>,
     val total_sessions: Int,
     val active_days: Int,
+    val total_km: Double,
 )
 
 // ---- Readiness ----

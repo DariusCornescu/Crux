@@ -20,6 +20,7 @@ class TrainingGridOut(BaseModel):
     days: list[TrainingDay]      # oldest -> newest, dense (empty days have mode=null)
     total_sessions: int
     active_days: int
+    total_km: float
 
 
 @router.get("/grid", response_model=TrainingGridOut)

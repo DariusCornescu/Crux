@@ -39,4 +39,6 @@ def grid(db: Session, weeks: int) -> dict:
         days.append({"day": d, "mode": dominant, "minutes": minutes})
         d += timedelta(days=1)
 
-    return {"days": days, "total_sessions": len(rows), "active_days": active_days}
+    total_km = sum((a.distance_m or 0) for a in rows) / 1000.0
+    return {"days": days, "total_sessions": len(rows), "active_days": active_days,
+            "total_km": round(total_km, 1)}

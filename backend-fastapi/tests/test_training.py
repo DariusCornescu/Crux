@@ -6,7 +6,8 @@ from app.models import Activity, ActivityType
 
 def test_grid_dense_dominant_mode_and_minutes(client, db):
     t = datetime.combine(date.today(), time(12, 0), tzinfo=timezone.utc)  # unambiguously today
-    db.add(Activity(source="manual", type=ActivityType.easy_run, start_time=t, duration_s=3600))  # 60m aerobic
+    db.add(Activity(source="manual", type=ActivityType.easy_run, start_time=t, duration_s=3600,
+                    distance_m=8000))                                     # 60m aerobic, 8 km
     db.add(Activity(source="manual", type=ActivityType.sprint, start_time=t, duration_s=600))      # 10m explosive
     db.commit()
 
@@ -14,6 +15,7 @@ def test_grid_dense_dominant_mode_and_minutes(client, db):
     assert len(body["days"]) == 14                # dense two weeks
     assert body["total_sessions"] == 2
     assert body["active_days"] == 1
+    assert body["total_km"] == 8.0                # summed distance
     today_cell = body["days"][-1]
     assert today_cell["mode"] == "aerobic"        # 60m aerobic beats 10m explosive
     assert today_cell["minutes"] == 70
