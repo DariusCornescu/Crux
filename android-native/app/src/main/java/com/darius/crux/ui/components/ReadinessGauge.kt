@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.darius.crux.network.ReadinessDTO
+import com.darius.crux.ui.format.formatSleepHm
 import com.darius.crux.ui.theme.ChalkShade
 import com.darius.crux.ui.theme.GateRed
 import com.darius.crux.ui.theme.Graphite
@@ -23,7 +24,6 @@ import com.darius.crux.ui.theme.Ink
 import com.darius.crux.ui.theme.Scree
 import com.darius.crux.ui.theme.Space
 import com.darius.crux.ui.theme.Steel
-import java.util.Locale
 
 /** Readiness: a word (READY/EASY/REST), the score, a band-colored bar, and drivers. */
 @Composable
@@ -53,7 +53,7 @@ fun ReadinessGauge(r: ReadinessDTO, modifier: Modifier = Modifier) {
 
 private fun driversLine(r: ReadinessDTO): String {
     if (r.low_data) return "AWAITING SLEEP + RHR DATA"
-    val sleep = r.sleep_min?.let { "SLEEP ${it / 60}:${String.format(Locale.US, "%02d", it % 60)}" }
+    val sleep = r.sleep_min?.let { "SLEEP ${formatSleepHm(it)}" }
     val rhr = r.resting_hr?.let { "RHR $it" }
     val load = r.training_load?.let { "LOAD ${it.toInt()}" }
     return listOfNotNull(sleep, rhr, load).joinToString(" · ").ifEmpty { "—" }

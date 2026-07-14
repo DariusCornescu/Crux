@@ -23,6 +23,8 @@ import com.darius.crux.ui.components.HairlineRule
 import com.darius.crux.ui.components.LoadingStrip
 import com.darius.crux.ui.components.MeetSheetScreen
 import com.darius.crux.ui.components.SectionHeader
+import com.darius.crux.ui.format.formatSleepHm
+import com.darius.crux.ui.format.formatSteps
 import com.darius.crux.ui.theme.Graphite
 import com.darius.crux.ui.theme.Ink
 import com.darius.crux.ui.theme.Space
@@ -158,9 +160,9 @@ private fun ConditionsSection(days: List<SignalDayDTO>) {
 private fun DayRow(day: SignalDayDTO) {
     val label = runCatching { LocalDate.parse(day.day).format(DAY_ROW_FMT).uppercase(Locale.US) }
         .getOrDefault(day.day)
-    val sleep = day.sleep_min?.let { "${it / 60}:${String.format(Locale.US, "%02d", it % 60)}" } ?: "--"
+    val sleep = formatSleepHm(day.sleep_min)
     val rhr = day.resting_hr?.toString() ?: "--"
-    val steps = day.steps?.let { if (it >= 1000) String.format(Locale.US, "%.1fK", it / 1000.0) else it.toString() } ?: "--"
+    val steps = formatSteps(day.steps)
 
     Row(Modifier.fillMaxWidth().padding(vertical = Space.xs)) {
         Text(label, style = MaterialTheme.typography.labelMedium.copy(color = Ink), modifier = Modifier.weight(1f))

@@ -43,6 +43,8 @@ import com.darius.crux.ui.components.ReadinessGauge
 import com.darius.crux.ui.components.SectionHeader
 import com.darius.crux.ui.components.StripInstrument
 import com.darius.crux.ui.components.TrainingGrid
+import com.darius.crux.ui.format.formatSleepHm
+import com.darius.crux.ui.format.formatSteps
 import com.darius.crux.ui.theme.ChalkShade
 import com.darius.crux.ui.theme.GateRed
 import com.darius.crux.ui.theme.Graphite
@@ -278,7 +280,7 @@ private fun WeekTag(week: Int?, isDemo: Boolean) {
 
 @Composable
 private fun ConditionsStrip(c: Conditions, moodPhrase: String?) {
-    val sleep = c.sleepMin?.let { "${it / 60}:${String.format(Locale.US, "%02d", it % 60)}" } ?: "--"
+    val sleep = formatSleepHm(c.sleepMin)
     val rhr = c.restingHr?.toString() ?: "--"
     val steps = formatSteps(c.steps)
     val mood = moodPhrase ?: "…"
@@ -291,11 +293,4 @@ private fun ConditionsStrip(c: Conditions, moodPhrase: String?) {
         Spacer(Modifier.width(Space.sm))
         Text("SLEEP $sleep · RHR $rhr · STEPS $steps · MOOD $mood", style = MaterialTheme.typography.labelSmall)
     }
-}
-
-/** Compact step total: 8241 -> "8.2K", small counts stay literal, null -> "--". */
-private fun formatSteps(steps: Int?): String = when {
-    steps == null -> "--"
-    steps >= 1000 -> String.format(Locale.US, "%.1fK", steps / 1000.0)
-    else -> steps.toString()
 }

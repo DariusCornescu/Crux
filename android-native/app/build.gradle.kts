@@ -60,8 +60,10 @@ dependencies {
     // On-device cache for the philosophy zone (last quote/reflection survive restarts)
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    // Health Connect — real sleep / resting HR / HRV for CONDITIONS + readiness
-    // (alpha10 is the newest that still compiles against compileSdk 35)
+    // Health Connect — real sleep / resting HR / HRV / steps for CONDITIONS + readiness.
+    // Pinned to alpha10: it is the newest release that still builds on compileSdk 35 +
+    // AGP 8.7.3. 1.1.0-rc03 / stable require compileSdk 36 and AGP 8.9.1+ — do NOT bump
+    // this without also bumping compileSdk and AGP together (see gradle/libs.versions.toml).
     implementation("androidx.health.connect:connect-client:1.1.0-alpha10")
 
     // FCM (step 7) — compiles without Firebase config; runtime is guarded
