@@ -21,6 +21,7 @@ ALLOWED_KINDS = {
     "sleep_score",    # vendor sleep quality 0-100
     "body_battery",   # Garmin-style energy 0-100
     "spo2",           # %
+    "steps",          # daily step total (cumulative; rolled up as MAX/day)
 }
 
 
@@ -28,7 +29,9 @@ def rollup_daily(db: Session, days: int = 14) -> int:
     """Aggregate samples into DailySummary. Returns #days touched.
 
     sleep_minutes: SUM per day (multiple sessions), sleep_score: AVG,
-    resting_hr: AVG rounded. Mood columns stay owned by the Spotify path.
+    resting_hr: AVG rounded, steps: MAX per day (the total is cumulative, so
+    the latest sync's value wins without double-counting). Mood columns stay
+    owned by the Spotify path.
     """
     since = datetime.combine(date.today() - timedelta(days=days),
                              datetime.min.time(), tzinfo=timezone.utc)
@@ -38,16 +41,17 @@ def rollup_daily(db: Session, days: int = 14) -> int:
             WellnessSample.kind,
             func.sum(WellnessSample.value),
             func.avg(WellnessSample.value),
+            func.max(WellnessSample.value),
         )
         .where(WellnessSample.recorded_at >= since,
-               WellnessSample.kind.in_(["sleep_minutes", "sleep_score", "resting_hr"]))
+               WellnessSample.kind.in_(["sleep_minutes", "sleep_score", "resting_hr", "steps"]))
         .group_by(func.date(WellnessSample.recorded_at), WellnessSample.kind)
     ).all()
 
     by_day: dict[date, dict] = {}
-    for day_value, kind, total, avg in rows:
+    for day_value, kind, total, avg, mx in rows:
         day = day_value if isinstance(day_value, date) else date.fromisoformat(str(day_value))
-        by_day.setdefault(day, {})[kind] = (total, avg)
+        by_day.setdefault(day, {})[kind] = (total, avg, mx)
 
     for day, kinds in by_day.items():
         summary = db.scalar(select(DailySummary).where(DailySummary.day == day))
@@ -60,5 +64,7 @@ def rollup_daily(db: Session, days: int = 14) -> int:
             summary.sleep_score = round(float(kinds["sleep_score"][1]), 1)
         if "resting_hr" in kinds:
             summary.resting_hr = int(round(float(kinds["resting_hr"][1])))
+        if "steps" in kinds:
+            summary.steps = int(round(float(kinds["steps"][2])))
     db.commit()
     return len(by_day)

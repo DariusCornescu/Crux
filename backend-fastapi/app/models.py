@@ -88,6 +88,7 @@ class DailySummary(Base):
     sleep_duration_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
     sleep_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     resting_hr: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    steps: Mapped[int | None] = mapped_column(Integer, nullable=True)  # daily total (Health Connect)
     mood_valence: Mapped[float | None] = mapped_column(Float, nullable=True)  # listening-derived
     mood_energy: Mapped[float | None] = mapped_column(Float, nullable=True)
     detail: Mapped[dict | None] = mapped_column(JSON, nullable=True)

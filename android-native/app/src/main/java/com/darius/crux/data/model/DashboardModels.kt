@@ -13,7 +13,7 @@ data class RailEntry(
     val vertM: Double? = null,     // loaded
 )
 
-data class Conditions(val sleepMin: Int?, val restingHr: Int?, val moodValence: Double?)
+data class Conditions(val sleepMin: Int?, val restingHr: Int?, val steps: Int?, val moodValence: Double?)
 
 data class GateBlock(
     val bestSplit: Double?,

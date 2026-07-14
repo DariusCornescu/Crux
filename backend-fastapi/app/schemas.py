@@ -197,6 +197,7 @@ class SignalDay(BaseModel):
     sleep_min: int | None = None
     sleep_score: float | None = None
     resting_hr: int | None = None
+    steps: int | None = None
     mood_valence: float | None = None
     mood_energy: float | None = None
 
@@ -218,6 +219,7 @@ class SignalsOut(BaseModel):
 class Conditions(BaseModel):
     sleep_min: int | None = None
     resting_hr: int | None = None
+    steps: int | None = None
     mood_valence: float | None = None
 
 

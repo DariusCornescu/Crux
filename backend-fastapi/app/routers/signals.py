@@ -24,7 +24,7 @@ def detail(db: Session = Depends(get_db)):
         recent_tracks=[SignalTrack(played_at=t.played_at, track=t.track_name, artist=t.artist,
                                    valence=t.valence, energy=t.energy) for t in tracks],
         daily=[SignalDay(day=d.day, sleep_min=d.sleep_duration_min, sleep_score=d.sleep_score,
-                         resting_hr=d.resting_hr, mood_valence=d.mood_valence,
+                         resting_hr=d.resting_hr, steps=d.steps, mood_valence=d.mood_valence,
                          mood_energy=d.mood_energy) for d in days],
         current_mood=mood.get_current(db).phrase,
         genres=[GenreCount(genre=g, count=c) for g, c in genre_counts.most_common()],

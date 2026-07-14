@@ -144,6 +144,7 @@ private fun ConditionsSection(days: List<SignalDayDTO>) {
             Text("DAY", style = MaterialTheme.typography.labelSmall.copy(color = Graphite), modifier = Modifier.weight(1f))
             Text("SLEEP", style = MaterialTheme.typography.labelSmall.copy(color = Graphite), modifier = Modifier.weight(1f))
             Text("RHR", style = MaterialTheme.typography.labelSmall.copy(color = Graphite), modifier = Modifier.weight(1f))
+            Text("STEPS", style = MaterialTheme.typography.labelSmall.copy(color = Graphite), modifier = Modifier.weight(1f))
         }
         Spacer(Modifier.height(Space.sm))
 
@@ -159,10 +160,12 @@ private fun DayRow(day: SignalDayDTO) {
         .getOrDefault(day.day)
     val sleep = day.sleep_min?.let { "${it / 60}:${String.format(Locale.US, "%02d", it % 60)}" } ?: "--"
     val rhr = day.resting_hr?.toString() ?: "--"
+    val steps = day.steps?.let { if (it >= 1000) String.format(Locale.US, "%.1fK", it / 1000.0) else it.toString() } ?: "--"
 
     Row(Modifier.fillMaxWidth().padding(vertical = Space.xs)) {
         Text(label, style = MaterialTheme.typography.labelMedium.copy(color = Ink), modifier = Modifier.weight(1f))
         Text(sleep, style = MaterialTheme.typography.labelMedium.copy(color = Ink), modifier = Modifier.weight(1f))
         Text(rhr, style = MaterialTheme.typography.labelMedium.copy(color = Ink), modifier = Modifier.weight(1f))
+        Text(steps, style = MaterialTheme.typography.labelMedium.copy(color = Ink), modifier = Modifier.weight(1f))
     }
 }

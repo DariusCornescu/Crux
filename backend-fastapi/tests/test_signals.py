@@ -9,7 +9,7 @@ def test_signals_detail_shape_and_order(client, db):
         ListeningSession(played_at=now - timedelta(hours=2), track_name="Older", valence=0.4),
         ListeningSession(played_at=now, track_name="Newest", artist="A", valence=0.8, energy=0.9),
     ])
-    db.add(DailySummary(day=now.date(), sleep_duration_min=432, resting_hr=52, mood_valence=0.5))
+    db.add(DailySummary(day=now.date(), sleep_duration_min=432, resting_hr=52, steps=8241, mood_valence=0.5))
     db.commit()
 
     r = client.get("/signals/detail")
@@ -20,3 +20,4 @@ def test_signals_detail_shape_and_order(client, db):
     assert set(tracks[0]) >= {"played_at", "track", "artist", "valence", "energy"}
     daily = body["daily"]
     assert daily[0]["sleep_min"] == 432 and daily[0]["resting_hr"] == 52
+    assert daily[0]["steps"] == 8241

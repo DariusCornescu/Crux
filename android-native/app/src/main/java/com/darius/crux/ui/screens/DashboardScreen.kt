@@ -280,6 +280,7 @@ private fun WeekTag(week: Int?, isDemo: Boolean) {
 private fun ConditionsStrip(c: Conditions, moodPhrase: String?) {
     val sleep = c.sleepMin?.let { "${it / 60}:${String.format(Locale.US, "%02d", it % 60)}" } ?: "--"
     val rhr = c.restingHr?.toString() ?: "--"
+    val steps = formatSteps(c.steps)
     val mood = moodPhrase ?: "…"
 
     Row(
@@ -288,6 +289,13 @@ private fun ConditionsStrip(c: Conditions, moodPhrase: String?) {
     ) {
         Text("COND", style = MaterialTheme.typography.labelSmall.copy(color = GateRed))
         Spacer(Modifier.width(Space.sm))
-        Text("SLEEP $sleep · RHR $rhr · MOOD $mood", style = MaterialTheme.typography.labelSmall)
+        Text("SLEEP $sleep · RHR $rhr · STEPS $steps · MOOD $mood", style = MaterialTheme.typography.labelSmall)
     }
+}
+
+/** Compact step total: 8241 -> "8.2K", small counts stay literal, null -> "--". */
+private fun formatSteps(steps: Int?): String = when {
+    steps == null -> "--"
+    steps >= 1000 -> String.format(Locale.US, "%.1fK", steps / 1000.0)
+    else -> steps.toString()
 }

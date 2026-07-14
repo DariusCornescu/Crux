@@ -34,7 +34,7 @@ def _demo(week_start: date) -> DashboardOut:
     return DashboardOut(
         demo=True,
         week=week_start.isocalendar().week,
-        conditions=Conditions(sleep_min=432, resting_hr=52, mood_valence=0.64),
+        conditions=Conditions(sleep_min=432, resting_hr=52, steps=8241, mood_valence=0.64),
         mood_trend=[
             MoodPoint(day=today - timedelta(days=13 - i),
                       valence=round(0.55 + 0.15 * math.sin(i / 2.2), 2) if i % 5 else None)
@@ -107,6 +107,7 @@ def summary(db: Session = Depends(get_db)):
     conditions = Conditions(
         sleep_min=latest.sleep_duration_min if latest else None,
         resting_hr=latest.resting_hr if latest else None,
+        steps=latest.steps if latest else None,
         mood_valence=latest.mood_valence if latest else None,
     )
 

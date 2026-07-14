@@ -8,6 +8,7 @@ import androidx.health.connect.client.records.HeartRateRecord
 import androidx.health.connect.client.records.HeartRateVariabilityRmssdRecord
 import androidx.health.connect.client.records.RestingHeartRateRecord
 import androidx.health.connect.client.records.SleepSessionRecord
+import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.ReadRecordsRequest
 import androidx.health.connect.client.time.TimeRangeFilter
 import com.darius.crux.network.RetrofitClient
@@ -34,6 +35,7 @@ class HealthConnectManager(private val context: Context) {
             HealthPermission.getReadPermission(RestingHeartRateRecord::class),
             HealthPermission.getReadPermission(HeartRateRecord::class),
             HealthPermission.getReadPermission(HeartRateVariabilityRmssdRecord::class),
+            HealthPermission.getReadPermission(StepsRecord::class),
         )
     }
 
@@ -96,6 +98,24 @@ class HealthConnectManager(private val context: Context) {
                 samples.add(WellnessSampleDTO(h.time.toString(), "hrv_ms", h.heartRateVariabilityMillis))
             }
         }.onFailure { Log.w(TAG, "hrv read: ${it.message}") }
+
+        // Steps: sum every StepsRecord per local day; post one daily total, timestamped
+        // at that day's latest bucket so today's total keeps climbing on each sync
+        // (the backend rolls steps up as MAX/day, so re-syncs never double-count).
+        runCatching {
+            val perDayTotal = HashMap<LocalDate, Long>()
+            val perDayLatest = HashMap<LocalDate, Instant>()
+            client.readRecords(ReadRecordsRequest(StepsRecord::class, range)).records.forEach { rec ->
+                val day = rec.startTime.atZone(ZoneId.systemDefault()).toLocalDate()
+                perDayTotal[day] = (perDayTotal[day] ?: 0L) + rec.count
+                val prev = perDayLatest[day]
+                if (prev == null || rec.startTime.isAfter(prev)) perDayLatest[day] = rec.startTime
+            }
+            perDayTotal.forEach { (day, total) ->
+                val at = perDayLatest[day] ?: end
+                samples.add(WellnessSampleDTO(at.toString(), "steps", total.toDouble()))
+            }
+        }.onFailure { Log.w(TAG, "steps read: ${it.message}") }
 
         if (samples.isEmpty()) return 0
         return runCatching {

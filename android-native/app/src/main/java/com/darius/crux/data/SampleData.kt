@@ -12,7 +12,7 @@ import com.darius.crux.data.model.StripBlock
 val sampleDashboard = DashboardData(
     week = 27,
     isDemo = true,
-    conditions = Conditions(sleepMin = 432, restingHr = 52, moodValence = 0.64),
+    conditions = Conditions(sleepMin = 432, restingHr = 52, steps = 8241, moodValence = 0.64),
     moodTrend = listOf(0.52, 0.61, null, 0.58, 0.66, 0.70, 0.63, null, 0.55, 0.60, 0.68, 0.72, 0.64, 0.64),
     rail = listOf(
         RailEntry(0, EffortMode.EXPLOSIVE, 3600, bestSplit = 6.98),

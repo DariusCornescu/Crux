@@ -17,7 +17,7 @@ import kotlin.math.roundToInt
 // Field names are snake_case on purpose — they mirror the FastAPI JSON payloads
 // one-to-one (same convention as ListManagerApp's DTOs.kt).
 
-data class ConditionsDTO(val sleep_min: Int?, val resting_hr: Int?, val mood_valence: Double?)
+data class ConditionsDTO(val sleep_min: Int?, val resting_hr: Int?, val steps: Int?, val mood_valence: Double?)
 data class MoodPointDTO(val day: String, val valence: Double?)
 data class RailEntryDTO(val day: String, val mode: String, val type: String, val duration_s: Int, val best_split: Double?, val distance_m: Double?, val vert_m: Double?)
 data class GateBlockDTO(val best_split: Double?, val session_note: String?, val splits: List<Double>?)
@@ -54,7 +54,7 @@ fun RailEntryDTO.toModel() = RailEntry(
 fun DashboardDTO.toModel() = DashboardData(
     week = week,
     isDemo = demo == true,
-    conditions = Conditions(conditions.sleep_min, conditions.resting_hr, conditions.mood_valence),
+    conditions = Conditions(conditions.sleep_min, conditions.resting_hr, conditions.steps, conditions.mood_valence),
     moodTrend = mood_trend.orEmpty().map { it.valence },
     rail = rail.orEmpty().map { it.toModel() },
     gate = GateBlock(gate.best_split, gate.session_note, gate.splits.orEmpty()),
@@ -147,6 +147,7 @@ data class SignalDayDTO(
     val sleep_min: Int?,
     val sleep_score: Double?,
     val resting_hr: Int?,
+    val steps: Int?,
     val mood_valence: Double?,
     val mood_energy: Double?,
 )
